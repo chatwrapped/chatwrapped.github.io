@@ -11,7 +11,7 @@ export interface ChatAnalysis {
         [username: string]: {
             messageCount: number;
             wordCount: number;
-            emojiCount: number;
+            emojiCount: number
         };
     };
 }
