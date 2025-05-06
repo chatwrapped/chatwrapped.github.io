@@ -7,7 +7,7 @@ const Index = () => {
       <main className="w-full max-w-4xl">
         <h1 className="text-4xl font-bold text-gray-900 text-center mb-6">Welcome to Your React Application</h1>
         <p className="text-gray-600 text-center text-lg">
-          Start building your project by editing the files in the <code className="bg-gray-100 px-1 py-0.5 rounded">src</code> directory.
+         try <code className="bg-gray-100 px-1 py-0.5 rounded">src</code> directory.
         </p>
       </main>
     </div>
