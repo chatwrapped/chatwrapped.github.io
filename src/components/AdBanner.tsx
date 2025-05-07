@@ -17,7 +17,9 @@ const AdBanner: React.FC<AdBannerProps> = ({
 
   useEffect(() => {
     // Solo se Google AdSense è caricato e siamo in produzione
-    if (window.adsbygoogle && process.env.NODE_ENV === 'production') {
+
+    if (window.adsbygoogle && !window.adsbygoogle.loaded) {
+      console.log("ASDASDASDASDASDASDASDASDASDASDASASD")
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       } catch (error) {
