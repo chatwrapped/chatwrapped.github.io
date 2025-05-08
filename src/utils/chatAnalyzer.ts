@@ -1,4 +1,4 @@
-
+import emojiRegex from 'emoji-regex';
 // Types for chat analysis
 export interface ChatAnalysis {
   totalMessages: number;
@@ -26,7 +26,9 @@ const TIME_PERIODS = {
 };
 
 // Emoji regex
-const EMOJI_REGEX = /\p{Emoji}/gu;
+
+const EMOJI_REGEX = emojiRegex();
+
 
 // Regex principale per estrarre messaggi WhatsApp con tutti i formati possibili
 // - Formato con timestamp completo: [20/11/23, 17:30:20] Username: Message
@@ -323,7 +325,7 @@ export const analyzeChatFile = (fileContent: string): ChatAnalysis => {
     const words = message.toLowerCase().split(/\s+/);
     for (const word of words) {
       const cleanWord = word.replace(/[^\w\sàèéìòù]/g, '').trim();
-      if (cleanWord && cleanWord.length >= 3) {
+      if (cleanWord && cleanWord.length >= 6) {
         wordCounts[cleanWord] = (wordCounts[cleanWord] || 0) + 1;
         analysis.userStats[username].wordCount++;
       }
