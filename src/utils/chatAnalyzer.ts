@@ -25,15 +25,11 @@ const TIME_PERIODS = {
   night: { start: 22, end: 6 }
 };
 
-// Emoji regex (compatibile con tutti i browser)
+// Emoji regex
 const EMOJI_REGEX = /\p{Emoji}/gu;
 
 // Regex principale per estrarre messaggi WhatsApp con tutti i formati possibili
-// - Formato con timestamp completo: [20/11/23, 17:30:20] Username: Message
-// - Formato con timestamp senza secondi: [20/11/23, 17:30] Username: Message
-// - Formato senza parentesi quadre: 20/11/23, 17:30 - Username: Message
-// - Formato nuovo: 20/11/23, 17:30 - Username:Message (senza spazio)
-const WHATSAPP_MESSAGE_REGEX = /(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)\]?[\s-]+(?:([^:\n]+):)?\s?(.+?)$/;
+const WHATSAPP_MESSAGE_REGEX = /(?:\[)?(\d{2}\/\d{2}\/\d{2}),\s(\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)\]?[\s-]+(?:([^:\n]+):)?\s?(.+?)$/;
 
 // Regex per i messaggi di sistema
 const WHATSAPP_SYSTEM_REGEX = /^(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*-\s*(.+)$/;
@@ -59,110 +55,117 @@ const IGNORED_MESSAGES = [
   "tocca per saperne di più"
 ];
 
+// Funzione per pulire e normalizzare il contenuto del file prima dell'analisi
+function cleanFileContent(fileContent: string): string {
+  console.log("Cleaning file content...");
+  
+  // Rimuove caratteri di controllo invisibili
+  let cleanedContent = fileContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+  
+  // Rimuove spazi bianchi all'inizio e alla fine di ogni riga
+  cleanedContent = cleanedContent.split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n');
+  
+  // Identifica e consolida messaggi multi-line
+  const consolidatedLines: string[] = [];
+  let currentMessage = "";
+  let isMultiline = false;
+  const regex = /(?:\[)?(\d{2}\/\d{2}\/\d{2}),\s/;
+  
+  cleanedContent.split('\n').forEach(line => {
+    // Se la riga inizia con un timestamp (data e ora)
+    if (regex.test(line)) {
+      if (currentMessage) {
+        consolidatedLines.push(currentMessage);
+      }
+      currentMessage = line;
+      isMultiline = false;
+    } else {
+      // È una continuazione del messaggio precedente
+      if (currentMessage) {
+        currentMessage += " " + line.trim();
+        isMultiline = true;
+      }
+    }
+  });
+  
+  // Aggiungi l'ultimo messaggio se presente
+  if (currentMessage) {
+    consolidatedLines.push(currentMessage);
+  }
+  
+  console.log(`File pulito: ${consolidatedLines.length} messaggi dopo la pulizia`);
+  return consolidatedLines.join('\n');
+}
+
 function normalizeMessages(fileContent: string): Array<{ timestamp: Date; username: string; message: string }> {
   console.log("Normalizing messages...");
-  const lines = fileContent.split('\n').filter(line => line.trim());
+  
+  // Prima puliamo il file
+  const cleanedContent = cleanFileContent(fileContent);
+  const lines = cleanedContent.split('\n').filter(line => line.trim());
   const normalizedMessages: Array<{ timestamp: Date; username: string; message: string }> = [];
 
-  console.log(`Trovate ${lines.length} righe nel file`);
+  console.log(`Trovate ${lines.length} righe nel file dopo la pulizia`);
   // Debug: Mostra le prime righe
-  console.log("Prime 5 righe:", lines.slice(0, 5));
+  console.log("Prime 5 righe dopo pulizia:", lines.slice(0, 5));
 
-  let currentMessage = "";
-  let currentDate = "";
-  let currentTime = "";
-  let currentUser = "";
-  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Verifica se la riga inizia con un timestamp (data e ora)
-    const hasTimestamp = line.match(/(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2})/);
+    // Estrai le informazioni dal messaggio
+    const match = line.match(WHATSAPP_MESSAGE_REGEX);
     
-    if (hasTimestamp) {
-      // Se abbiamo un messaggio precedente da processare
-      if (currentMessage) {
-        processMessage(currentDate, currentTime, currentUser, currentMessage, normalizedMessages);
+    if (match) {
+      const [, date, time, username, messageContent] = match;
+      
+      // Skip messaggi di sistema e crittografia
+      const lowerMessage = messageContent.toLowerCase().trim();
+      
+      if (IGNORED_MESSAGES.some(text => lowerMessage.includes(text))) {
+        console.log(`Ignorato messaggio di sistema: ${messageContent.substring(0, 30)}...`);
+        continue;
       }
       
-      // Estrai le informazioni dal nuovo messaggio
-      const match = line.match(WHATSAPP_MESSAGE_REGEX);
-      
-      if (match) {
-        const [, date, time, username, messageContent] = match;
-        currentDate = date;
-        currentTime = time;
-        currentUser = username || ""; // Se il username è undefined (messaggio di sistema)
-        currentMessage = messageContent || "";
-      } else {
-        // Potrebbe essere un messaggio di sistema
-        const systemMatch = line.match(WHATSAPP_SYSTEM_REGEX);
-        if (systemMatch) {
-          const [, date, time, systemMessage] = systemMatch;
-          // Ignora i messaggi di sistema ma salva data e ora per debug
-          console.log(`Messaggio di sistema ignorato [${date}, ${time}]: ${systemMessage}`);
-          currentMessage = "";
-        } else {
-          console.log("Riga non analizzata:", line);
-          currentMessage = "";
-        }
+      // Parse date and time
+      const timestamp = parseDateTime(date, time);
+      if (!timestamp) {
+        console.warn(`Errore nel parsing della data/ora: ${date}, ${time}`);
+        continue;
       }
+      
+      // Controlli per vari tipi di media
+      if (MEDIA_PATTERNS.some(pattern => messageContent.includes(pattern))) {
+        normalizedMessages.push({
+          timestamp,
+          username: username ? username.trim() : "System",
+          message: "<Media omessi>"
+        });
+        continue;
+      }
+      
+      // Aggiungi il messaggio normalizzato
+      normalizedMessages.push({
+        timestamp,
+        username: username ? username.trim() : "System",
+        message: messageContent.trim()
+      });
     } else {
-      // Se non ha un timestamp, è una continuazione del messaggio precedente
-      if (currentMessage) {
-        currentMessage += "\n" + line;
+      // Potrebbe essere un messaggio di sistema
+      const systemMatch = line.match(WHATSAPP_SYSTEM_REGEX);
+      if (systemMatch) {
+        const [, date, time, systemMessage] = systemMatch;
+        console.log(`Messaggio di sistema ignorato [${date}, ${time}]: ${systemMessage}`);
+      } else {
+        console.log("Riga non analizzata:", line);
       }
     }
-  }
-  
-  // Non dimenticare l'ultimo messaggio
-  if (currentMessage) {
-    processMessage(currentDate, currentTime, currentUser, currentMessage, normalizedMessages);
   }
 
   console.log(`Messaggi normalizzati: ${normalizedMessages.length}`);
   return normalizedMessages;
-}
-
-// Helper function to process a single message
-function processMessage(
-  date: string, 
-  time: string, 
-  username: string, 
-  message: string, 
-  normalizedMessages: Array<{ timestamp: Date; username: string; message: string }>
-) {
-  // Skip messaggi di sistema e crittografia
-  const lowerMessage = message.toLowerCase().trim();
-  
-  if (IGNORED_MESSAGES.some(text => lowerMessage.includes(text))) {
-    console.log(`Ignorato messaggio di sistema: ${message.substring(0, 30)}...`);
-    return;
-  }
-
-  // Parse date and time
-  const timestamp = parseDateTime(date, time);
-  if (!timestamp) {
-    console.warn(`Errore nel parsing della data/ora: ${date}, ${time}`);
-    return;
-  }
-  
-  // Controlli per vari tipi di media
-  if (MEDIA_PATTERNS.some(pattern => message.includes(pattern))) {
-    normalizedMessages.push({
-      timestamp,
-      username: username.trim(),
-      message: "<Media omessi>"
-    });
-    return;
-  }
-
-  // Aggiungi il messaggio normalizzato
-  normalizedMessages.push({
-    timestamp,
-    username: username.trim(),
-    message: message.trim()
-  });
 }
 
 // Helper function to parse date and time
@@ -188,8 +191,8 @@ function parseDateTime(date: string, time: string): Date | null {
     const hour = parseInt(timeParts[0]);
     const minute = parseInt(timeParts[1]);
     // Gestione dei secondi (se presenti)
-    const secondMatch = timeParts[1]?.match(/(\d{2}):/);
-    const second = secondMatch ? parseInt(secondMatch[1]) : (timeParts.length > 2 ? parseInt(timeParts[2]) : 0);
+    const secondsMatch = timeParts.length > 2 ? timeParts[2] : "0";
+    const second = parseInt(secondsMatch);
     
     console.log(`Transformed: ${year}-${monthIndex+1}-${dayValue} ${hour}:${minute}:${second}`);
     
