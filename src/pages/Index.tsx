@@ -85,7 +85,7 @@ const Index = () => {
                 <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8">
                   Come ottenere il file da WhatsApp?
                 </p>
-                
+
                 <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 md:p-6 mb-6 shadow-md border border-white/30">
                   <h3 className="font-semibold text-lg mb-2 text-primary">Come ottenere il file da WhatsApp?</h3>
                   <ol className="text-left space-y-2 text-sm md:text-base">
@@ -107,7 +107,7 @@ const Index = () => {
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">5.</span>
-                      <span>Salva il file sul tuo telefono e caricalo su ChatWrapped</span>
+                      <span>Salva il file sul tuo telefono, estrai il file .txt e caricalo su ChatWrapped</span>
                     </li>
                   </ol>
                 </div>
@@ -159,7 +159,7 @@ const Index = () => {
                   Ideale per chi vuole scoprire i propri pattern di comunicazione.
                 </p>
               </div>
-              
+
               <div>
                 <h4 className="text-base font-semibold flex items-center justify-center md:justify-start mb-2 text-primary-foreground">
                   <Github size={18} className="mr-2" />
@@ -170,19 +170,19 @@ const Index = () => {
                   Tutte le analisi avvengono direttamente nel tuo dispositivo.
                 </p>
               </div>
-              
+
               <div>
                 <h4 className="text-base font-semibold flex items-center justify-center md:justify-start mb-2 text-primary-foreground">
                   <Copyright size={18} className="mr-2" />
                   Disclaimer
                 </h4>
                 <p className="text-xs md:text-sm text-foreground/90">
-                  <strong>NESSUN DATO VIENE INVIATO FUORI DAL TUO DISPOSITIVO</strong>. 
+                  <strong>NESSUN DATO VIENE INVIATO FUORI DAL TUO DISPOSITIVO</strong>.
                   Le tue conversazioni rimangono private e sicure.
                 </p>
               </div>
             </div>
-            
+
             <div className="mt-4 pt-4 border-t border-white/20 flex flex-col md:flex-row justify-between items-center text-xs text-white/80">
               <p>
                 © {currentYear} ChatWrapped
