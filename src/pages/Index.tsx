@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Github, Copyright, Info } from "lucide-react";
 import AdBanner from "@/components/AdBanner";
 
+
 const Index = () => {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<ChatAnalysis | null>(null);

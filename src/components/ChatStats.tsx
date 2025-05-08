@@ -160,14 +160,14 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
                       outerRadius={90}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, percent }) => 
+                      label={({ name, percent }) =>
                         `${name}: ${(percent * 100).toFixed(0)}%`
                       }
                     >
                       {timeOfDayData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
                         />
                       ))}
                     </Pie>
@@ -212,8 +212,8 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
                   margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="name" 
+                  <XAxis
+                    dataKey="name"
                     tick={{ fontSize: 12 }}
                     interval={0}
                     height={60}

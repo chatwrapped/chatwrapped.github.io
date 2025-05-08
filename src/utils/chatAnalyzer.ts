@@ -204,7 +204,6 @@ function processMessage(
 // Helper function to parse date and time
 function parseDateTime(date: string, time: string): Date | null {
   try {
-    console.log(`Parsing date and time: ${date}, ${time}`);
 
     const [day, month, yearOrDay] = date.split('/');
 
@@ -227,7 +226,6 @@ function parseDateTime(date: string, time: string): Date | null {
     const secondMatch = timeParts[1]?.match(/(\d{2}):/);
     const second = secondMatch ? parseInt(secondMatch[1]) : (timeParts.length > 2 ? parseInt(timeParts[2]) : 0);
 
-    console.log(`Transformed: ${year}-${monthIndex + 1}-${dayValue} ${hour}:${minute}:${second}`);
 
     return new Date(year, monthIndex, dayValue, hour, minute, second);
   } catch (error) {
