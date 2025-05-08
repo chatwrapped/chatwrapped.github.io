@@ -85,7 +85,6 @@ function cleanFileContent(fileContent: string): string {
       result += ' ';
     }
   }
-  console.log(result)
   return result.trim();
 }
 
@@ -102,9 +101,7 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
   const lines = cleanedContent.split('\n').filter(line => line.trim());
   const normalizedMessages: Array<{ timestamp: Date; username: string; message: string }> = [];
 
-  console.log(`Trovate ${lines.length} righe nel file dopo la pulizia`);
   // Debug: Mostra le prime righe
-  console.log("Prime 5 righe:", lines.slice(0, 5));
 
   let currentMessage = "";
   let currentDate = "";
@@ -141,7 +138,6 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
           console.log(`Messaggio di sistema ignorato [${date}, ${time}]: ${systemMessage}`);
           currentMessage = "";
         } else {
-          console.log("Riga non analizzata:", line);
           currentMessage = "";
         }
       }
@@ -158,7 +154,7 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
     processMessage(currentDate, currentTime, currentUser, currentMessage, normalizedMessages);
   }
 
-  console.log(`Messaggi normalizzati: ${normalizedMessages.length}`);
+
   return normalizedMessages;
 }
 
