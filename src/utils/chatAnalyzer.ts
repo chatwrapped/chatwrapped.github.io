@@ -28,127 +28,147 @@ const TIME_PERIODS = {
 // Emoji regex (compatibile con tutti i browser)
 const EMOJI_REGEX = /\p{Emoji}/gu;
 
-// REGEX aggiornate per supportare tutti i formati
-// 1. WhatsApp iOS formato originale: [dd/mm/yy, HH:MM:SS] Username: Message
-// 2. WhatsApp Android formato originale: dd/mm/yy, HH:MM - Username: Message
-// 3. Nuovo formato: dd/mm/yy, HH:MM - Username: Message (senza spazio dopo i due punti)
-// 4. Formato con timestamp completo: [dd/mm/yy, HH:MM:SS] Username: Message
+// Regex principale per estrarre messaggi WhatsApp con tutti i formati possibili
+// - Formato con timestamp completo: [20/11/23, 17:30:20] Username: Message
+// - Formato con timestamp senza secondi: [20/11/23, 17:30] Username: Message
+// - Formato senza parentesi quadre: 20/11/23, 17:30 - Username: Message
+// - Formato nuovo: 20/11/23, 17:30 - Username:Message (senza spazio)
+const WHATSAPP_MESSAGE_REGEX = /(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)\]?[\s-]+(?:([^:\n]+):)?\s?(.+?)$/;
 
-// Formato preciso con timestamp in quadre (es. [20/11/23, 17:30:20])
-const WHATSAPP_TIMESTAMP_FORMAT_REGEX = /^\[(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}:\d{2})\]\s*([^:]+):\s*(.*)$/;
-// Formato iOS classico
-const WHATSAPP_IOS_REGEX = /^\[(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]\s*([^:]+):\s*(.*)$/;
-// Formato Android classico
-const WHATSAPP_ANDROID_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):\s*(.*)$/;
-// Formato nuovo senza spazio dopo i due punti
-const WHATSAPP_NEW_FORMAT_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):(.*)$/;
-// Messaggi di sistema
-const WHATSAPP_SYSTEM_MESSAGE_REGEX = /^(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*-\s*(.+)$/;
+// Regex per i messaggi di sistema
+const WHATSAPP_SYSTEM_REGEX = /^(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*-\s*(.+)$/;
+
+// Media message patterns
+const MEDIA_PATTERNS = [
+  "<media omessi>",
+  "immagine omessa",
+  "documento omesso",
+  "media omesso",
+  "‎immagine omessa",
+  "‎documento omesso",
+  "‎media omesso"
+];
+
+// Messaggi da ignorare (comuni in tutte le chat WhatsApp)
+const IGNORED_MESSAGES = [
+  "i messaggi e le chiamate sono crittografati",
+  "messaggi e chiamate sono crittografate",
+  "il tuo codice di sicurezza",
+  "solo le persone in questa chat",
+  "per saperne di più",
+  "tocca per saperne di più"
+];
 
 function normalizeMessages(fileContent: string): Array<{ timestamp: Date; username: string; message: string }> {
+  console.log("Normalizing messages...");
   const lines = fileContent.split('\n').filter(line => line.trim());
   const normalizedMessages: Array<{ timestamp: Date; username: string; message: string }> = [];
 
-  // Messaggi da ignorare (comuni in tutte le chat WhatsApp)
-  const ignoredMessages = [
-    'i messaggi e le chiamate sono crittografati',
-    'messaggi e chiamate sono crittografate',
-    'il tuo codice di sicurezza',
-    'solo le persone in questa chat',
-    'per saperne di più',
-    'tocca per saperne di più'
-  ];
-
+  console.log(`Trovate ${lines.length} righe nel file`);
   // Debug: Mostra le prime righe
-  console.log("Prime 3 righe:", lines.slice(0, 3));
+  console.log("Prime 5 righe:", lines.slice(0, 5));
 
-  for (const line of lines) {
-    let match: RegExpMatchArray | null = null;
-    let format: 'timestamp' | 'ios' | 'android' | 'new' | 'system' | null = null;
-
-    // Prima prova il formato più specifico (timestamp con secondi)
-    if ((match = line.match(WHATSAPP_TIMESTAMP_FORMAT_REGEX))) {
-      format = 'timestamp';
-    } 
-    // Poi prova gli altri formati
-    else if ((match = line.match(WHATSAPP_IOS_REGEX))) {
-      format = 'ios';
-    } else if ((match = line.match(WHATSAPP_ANDROID_REGEX))) {
-      format = 'android';
-    } else if ((match = line.match(WHATSAPP_NEW_FORMAT_REGEX))) {
-      format = 'new';
-    } else if ((match = line.match(WHATSAPP_SYSTEM_MESSAGE_REGEX))) {
-      // È un messaggio di sistema, lo ignoriamo
-      console.log("Sistema:", line);
-      continue;
+  let currentMessage = "";
+  let currentDate = "";
+  let currentTime = "";
+  let currentUser = "";
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Verifica se la riga inizia con un timestamp (data e ora)
+    const hasTimestamp = line.match(/(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2})/);
+    
+    if (hasTimestamp) {
+      // Se abbiamo un messaggio precedente da processare
+      if (currentMessage) {
+        processMessage(currentDate, currentTime, currentUser, currentMessage, normalizedMessages);
+      }
+      
+      // Estrai le informazioni dal nuovo messaggio
+      const match = line.match(WHATSAPP_MESSAGE_REGEX);
+      
+      if (match) {
+        const [, date, time, username, messageContent] = match;
+        currentDate = date;
+        currentTime = time;
+        currentUser = username || ""; // Se il username è undefined (messaggio di sistema)
+        currentMessage = messageContent || "";
+      } else {
+        // Potrebbe essere un messaggio di sistema
+        const systemMatch = line.match(WHATSAPP_SYSTEM_REGEX);
+        if (systemMatch) {
+          const [, date, time, systemMessage] = systemMatch;
+          // Ignora i messaggi di sistema ma salva data e ora per debug
+          console.log(`Messaggio di sistema ignorato [${date}, ${time}]: ${systemMessage}`);
+          currentMessage = "";
+        } else {
+          console.log("Riga non analizzata:", line);
+          currentMessage = "";
+        }
+      }
     } else {
-      console.log("Riga non analizzata:", line);
-      continue;
+      // Se non ha un timestamp, è una continuazione del messaggio precedente
+      if (currentMessage) {
+        currentMessage += "\n" + line;
+      }
     }
+  }
+  
+  // Non dimenticare l'ultimo messaggio
+  if (currentMessage) {
+    processMessage(currentDate, currentTime, currentUser, currentMessage, normalizedMessages);
+  }
 
-    // Estrai i componenti dal match in base al formato
-    let date: string, time: string, username: string, message: string;
-    
-    if (format === 'timestamp' || format === 'ios') {
-      [, date, time, username, message] = match;
-    } else if (format === 'android' || format === 'new') {
-      [, date, time, username, message] = match;
-    } else {
-      continue; // Non dovrebbe mai accadere
-    }
+  console.log(`Messaggi normalizzati: ${normalizedMessages.length}`);
+  return normalizedMessages;
+}
 
-    // Skip messaggi di sistema e crittografia
-    const lowerMessage = message ? message.toLowerCase() : '';
-    const lowerUsername = username ? username.toLowerCase() : '';
-    
-    if (ignoredMessages.some(text => 
-        (lowerMessage.includes(text)) ||
-        (lowerUsername.includes(text))
-    )) {
-      console.log("Ignorato:", line);
-      continue;
-    }
+// Helper function to process a single message
+function processMessage(
+  date: string, 
+  time: string, 
+  username: string, 
+  message: string, 
+  normalizedMessages: Array<{ timestamp: Date; username: string; message: string }>
+) {
+  // Skip messaggi di sistema e crittografia
+  const lowerMessage = message.toLowerCase().trim();
+  
+  if (IGNORED_MESSAGES.some(text => lowerMessage.includes(text))) {
+    console.log(`Ignorato messaggio di sistema: ${message.substring(0, 30)}...`);
+    return;
+  }
 
-    // Parse date and time
-    const timestamp = parseDateTime(date, time);
-    if (!timestamp) {
-      console.warn("Errore nel parsing della data/ora:", date, time);
-      continue;
-    }
-    
-    // Debug per verificare il parsing corretto
-    console.log(`Data processata: ${date}, ${time} => ${timestamp.toISOString()}`);
-
-    // Controlli per vari tipi di media
-    if (message.includes("<Media omessi>") || 
-        message.includes("immagine omessa") || 
-        message.includes("documento omesso") || 
-        message.includes("media omesso") ||
-        message.trim() === "‎immagine omessa") {
-        
-      normalizedMessages.push({
-        timestamp,
-        username: username.trim(),
-        message: "<Media omessi>"
-      });
-      continue;
-    }
-
+  // Parse date and time
+  const timestamp = parseDateTime(date, time);
+  if (!timestamp) {
+    console.warn(`Errore nel parsing della data/ora: ${date}, ${time}`);
+    return;
+  }
+  
+  // Controlli per vari tipi di media
+  if (MEDIA_PATTERNS.some(pattern => message.includes(pattern))) {
     normalizedMessages.push({
       timestamp,
       username: username.trim(),
-      message: message.trim()
+      message: "<Media omessi>"
     });
+    return;
   }
 
-  console.log("Messaggi normalizzati:", normalizedMessages.length);
-  return normalizedMessages;
+  // Aggiungi il messaggio normalizzato
+  normalizedMessages.push({
+    timestamp,
+    username: username.trim(),
+    message: message.trim()
+  });
 }
 
 // Helper function to parse date and time
 function parseDateTime(date: string, time: string): Date | null {
   try {
-    console.log("Parsing date and time:", date, time);
+    console.log(`Parsing date and time: ${date}, ${time}`);
     
     const [day, month, yearOrDay] = date.split('/');
     
@@ -167,7 +187,9 @@ function parseDateTime(date: string, time: string): Date | null {
     const timeParts = time.split(':');
     const hour = parseInt(timeParts[0]);
     const minute = parseInt(timeParts[1]);
-    const second = timeParts.length > 2 ? parseInt(timeParts[2]) : 0;
+    // Gestione dei secondi (se presenti)
+    const secondMatch = timeParts[1]?.match(/(\d{2}):/);
+    const second = secondMatch ? parseInt(secondMatch[1]) : (timeParts.length > 2 ? parseInt(timeParts[2]) : 0);
     
     console.log(`Transformed: ${year}-${monthIndex+1}-${dayValue} ${hour}:${minute}:${second}`);
     
