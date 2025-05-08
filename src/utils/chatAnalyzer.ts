@@ -32,10 +32,13 @@ const EMOJI_REGEX = /\p{Emoji}/gu;
 // 1. WhatsApp iOS formato originale: [dd/mm/yy, HH:MM:SS] Username: Message
 // 2. WhatsApp Android formato originale: dd/mm/yy, HH:MM - Username: Message
 // 3. Nuovo formato: dd/mm/yy, HH:MM - Username: Message (senza spazio dopo i due punti)
+// 4. Ulteriore formato con timestamp completo: [dd/mm/yy, HH:MM:SS] Username: Message
 const WHATSAPP_IOS_REGEX = /^\[(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]\s*([^:]+):\s*(.*)$/;
 const WHATSAPP_ANDROID_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):\s*(.*)$/;
 const WHATSAPP_NEW_FORMAT_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):(.*)$/;
 const WHATSAPP_SYSTEM_MESSAGE_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*(.+)$/;
+// Nuovo formato con timestamp in quadre
+const WHATSAPP_TIMESTAMP_FORMAT_REGEX = /^\[(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}:\d{2})\]\s*([^:]+):\s*(.*)$/;
 
 function normalizeMessages(fileContent: string): Array<{ timestamp: Date; username: string; message: string }> {
   const lines = fileContent.split('\n').filter(line => line.trim());
@@ -53,10 +56,12 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
 
   for (const line of lines) {
     let match: RegExpMatchArray | null = null;
-    let format: 'ios' | 'android' | 'new' | 'system' | null = null;
+    let format: 'ios' | 'android' | 'new' | 'system' | 'timestamp' | null = null;
 
     // Detect format and match the line
-    if ((match = line.match(WHATSAPP_IOS_REGEX))) {
+    if ((match = line.match(WHATSAPP_TIMESTAMP_FORMAT_REGEX))) {
+      format = 'timestamp';
+    } else if ((match = line.match(WHATSAPP_IOS_REGEX))) {
       format = 'ios';
     } else if ((match = line.match(WHATSAPP_ANDROID_REGEX))) {
       format = 'android';
@@ -74,7 +79,7 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
     // Estrai i componenti dal match in base al formato
     let date: string, time: string, username: string, message: string;
     
-    if (format === 'ios') {
+    if (format === 'ios' || format === 'timestamp') {
       [, date, time, username, message] = match;
     } else if (format === 'android') {
       [, date, time, username, message] = match;
@@ -99,8 +104,12 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
       continue;
     }
 
-    // Controllo per i messaggi contenenti media
-    if (message.includes("<Media omessi>")) {
+    // Controlli per vari tipi di media
+    if (message.includes("<Media omessi>") || 
+        message.includes("immagine omessa") || 
+        message.includes("documento omesso") || 
+        message.includes("media omesso") ||
+        message.trim() === "‎immagine omessa") {
       normalizedMessages.push({
         timestamp,
         username: username.trim(),
