@@ -33,7 +33,9 @@ const EMOJI_REGEX = /\p{Emoji}/gu;
 // - Formato con timestamp senza secondi: [20/11/23, 17:30] Username: Message
 // - Formato senza parentesi quadre: 20/11/23, 17:30 - Username: Message
 // - Formato nuovo: 20/11/23, 17:30 - Username:Message (senza spazio)
-const WHATSAPP_MESSAGE_REGEX = /(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)\]?[\s-]+(?:([^:\n]+):)?\s?(.+?)$/;
+
+
+const WHATSAPP_MESSAGE_REGEX = /(?:\[)?(\d{2}\/\d{2}\/\d{2}),\s(\d{1,2}:\d{2}(?::\d{2})?(?: ?[AP]M)?)\]?[\s-]+(?:([^:\n]+):)?\s?([^\n]+(?:\n(?!\d{2}\/\d{2}\/\d{2},).*)*)/g;
 
 // Regex per i messaggi di sistema
 const WHATSAPP_SYSTEM_REGEX = /^(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*-\s*(.+)$/;
@@ -72,22 +74,22 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
   let currentDate = "";
   let currentTime = "";
   let currentUser = "";
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
+
     // Verifica se la riga inizia con un timestamp (data e ora)
     const hasTimestamp = line.match(/(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2})/);
-    
+
     if (hasTimestamp) {
       // Se abbiamo un messaggio precedente da processare
       if (currentMessage) {
         processMessage(currentDate, currentTime, currentUser, currentMessage, normalizedMessages);
       }
-      
+
       // Estrai le informazioni dal nuovo messaggio
       const match = line.match(WHATSAPP_MESSAGE_REGEX);
-      
+
       if (match) {
         const [, date, time, username, messageContent] = match;
         currentDate = date;
@@ -114,7 +116,7 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
       }
     }
   }
-  
+
   // Non dimenticare l'ultimo messaggio
   if (currentMessage) {
     processMessage(currentDate, currentTime, currentUser, currentMessage, normalizedMessages);
@@ -126,15 +128,15 @@ function normalizeMessages(fileContent: string): Array<{ timestamp: Date; userna
 
 // Helper function to process a single message
 function processMessage(
-  date: string, 
-  time: string, 
-  username: string, 
-  message: string, 
+  date: string,
+  time: string,
+  username: string,
+  message: string,
   normalizedMessages: Array<{ timestamp: Date; username: string; message: string }>
 ) {
   // Skip messaggi di sistema e crittografia
   const lowerMessage = message.toLowerCase().trim();
-  
+
   if (IGNORED_MESSAGES.some(text => lowerMessage.includes(text))) {
     console.log(`Ignorato messaggio di sistema: ${message.substring(0, 30)}...`);
     return;
@@ -146,7 +148,7 @@ function processMessage(
     console.warn(`Errore nel parsing della data/ora: ${date}, ${time}`);
     return;
   }
-  
+
   // Controlli per vari tipi di media
   if (MEDIA_PATTERNS.some(pattern => message.includes(pattern))) {
     normalizedMessages.push({
@@ -169,9 +171,9 @@ function processMessage(
 function parseDateTime(date: string, time: string): Date | null {
   try {
     console.log(`Parsing date and time: ${date}, ${time}`);
-    
+
     const [day, month, yearOrDay] = date.split('/');
-    
+
     // Assicurarsi che year sia un numero a 4 cifre
     let year: number;
     if (yearOrDay.length === 2) {
@@ -179,10 +181,10 @@ function parseDateTime(date: string, time: string): Date | null {
     } else {
       year = parseInt(yearOrDay);
     }
-    
+
     const monthIndex = parseInt(month) - 1;  // In JavaScript i mesi partono da 0
     const dayValue = parseInt(day);
-    
+
     // Parsing dell'ora
     const timeParts = time.split(':');
     const hour = parseInt(timeParts[0]);
@@ -190,9 +192,9 @@ function parseDateTime(date: string, time: string): Date | null {
     // Gestione dei secondi (se presenti)
     const secondMatch = timeParts[1]?.match(/(\d{2}):/);
     const second = secondMatch ? parseInt(secondMatch[1]) : (timeParts.length > 2 ? parseInt(timeParts[2]) : 0);
-    
-    console.log(`Transformed: ${year}-${monthIndex+1}-${dayValue} ${hour}:${minute}:${second}`);
-    
+
+    console.log(`Transformed: ${year}-${monthIndex + 1}-${dayValue} ${hour}:${minute}:${second}`);
+
     return new Date(year, monthIndex, dayValue, hour, minute, second);
   } catch (error) {
     console.error("Errore durante il parsing della data:", error, date, time);
@@ -212,7 +214,7 @@ function extractEmojis(text: string): string[] {
 
 export const analyzeChatFile = (fileContent: string): ChatAnalysis => {
   console.log("Inizio analisi del file");
-  
+
   const normalizedMessages = normalizeMessages(fileContent);
   console.log('Messaggi analizzati:', normalizedMessages.length); // Debug
 
@@ -244,7 +246,7 @@ export const analyzeChatFile = (fileContent: string): ChatAnalysis => {
     // Count media messages
     if (message === "<Media omessi>") {
       analysis.mediaCount++;
-      
+
       // Aggiungiamo comunque il messaggio ai conteggi dell'utente
       if (!analysis.userStats[username]) {
         analysis.userStats[username] = {
@@ -326,7 +328,7 @@ export const analyzeChatFile = (fileContent: string): ChatAnalysis => {
     (max, [word, count]) => (count > max.count ? { word, count } : max),
     { word: '', count: 0 }
   );
-  
+
   analysis.mostUsedEmoji = Object.entries(emojiCounts).reduce(
     (max, [emoji, count]) => (count > max.count ? { emoji, count } : max),
     { emoji: '', count: 0 }
