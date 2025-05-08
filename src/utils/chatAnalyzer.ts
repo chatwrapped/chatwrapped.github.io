@@ -1,3 +1,4 @@
+
 // Types for chat analysis
 export interface ChatAnalysis {
   totalMessages: number;
@@ -27,80 +28,127 @@ const TIME_PERIODS = {
 // Emoji regex (compatibile con tutti i browser)
 const EMOJI_REGEX = /\p{Emoji}/gu;
 
-// CORREZIONE DELLA REGEX PRINCIPALE
-// REGEX DEFINITIVA (testata sui tuoi esempi)
-// VERSIONE FINALE TESTATA SU TUTTI I CASI
-// VERSIONE FINALE TESTATA SU TUTTI I CASI
-const CHAT_MESSAGE_REGEX =
-  /^(?:\[(\d{2}\/\d{2}\/\d{2}),\s(\d{1,2}:\d{2}(?::\d{2})?\]\s([^:]+):\s(.+)|(\d{2}\/\d{2}\/\d{2}),\s(\d{1,2}:\d{2})\s-\s([^:]+):\s(.+)|(\d{2}\/\d{2}\/\d{2}),\s(\d{1,2}:\d{2})\s-\s([^:]+):(.+))$)/;
-function parseChatLine(line: string): { date: string; time: string; sender: string; message: string } | null {
-  const match = line.match(CHAT_MESSAGE_REGEX);
-  return match ? {
-    date: match[1],
-    time: match[2],
-    sender: match[3].trim(),
-    message: match[4].trim()
-  } : null;
-}
+// REGEX aggiornate per supportare tutti i formati
+// 1. WhatsApp iOS formato originale: [dd/mm/yy, HH:MM:SS] Username: Message
+// 2. WhatsApp Android formato originale: dd/mm/yy, HH:MM - Username: Message
+// 3. Nuovo formato: dd/mm/yy, HH:MM - Username: Message (senza spazio dopo i due punti)
+const WHATSAPP_IOS_REGEX = /^\[(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]\s*([^:]+):\s*(.*)$/;
+const WHATSAPP_ANDROID_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):\s*(.*)$/;
+const WHATSAPP_NEW_FORMAT_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):(.*)$/;
+const WHATSAPP_SYSTEM_MESSAGE_REGEX = /^(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*(.+)$/;
 
 function normalizeMessages(fileContent: string): Array<{ timestamp: Date; username: string; message: string }> {
+  const lines = fileContent.split('\n').filter(line => line.trim());
+  const normalizedMessages: Array<{ timestamp: Date; username: string; message: string }> = [];
+
+  // Messaggi da ignorare (comuni in tutte le chat WhatsApp)
   const ignoredMessages = [
     'i messaggi e le chiamate sono crittografati',
     'messaggi e chiamate sono crittografate',
     'il tuo codice di sicurezza',
-    'immagine omessa',
-    '<media omessi>',
-    'null',
-    '‎'
+    'solo le persone in questa chat',
+    'per saperne di più',
+    'tocca per saperne di più'
   ];
 
-  return fileContent.split('\n')
-    .flatMap(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return [];
+  for (const line of lines) {
+    let match: RegExpMatchArray | null = null;
+    let format: 'ios' | 'android' | 'new' | 'system' | null = null;
 
-      const parsed = parseChatLine(trimmed);
-      if (!parsed) {
-        console.log('Linea non analizzata:', trimmed); // Debug
-        return [];
-      }
+    // Detect format and match the line
+    if ((match = line.match(WHATSAPP_IOS_REGEX))) {
+      format = 'ios';
+    } else if ((match = line.match(WHATSAPP_ANDROID_REGEX))) {
+      format = 'android';
+    } else if ((match = line.match(WHATSAPP_NEW_FORMAT_REGEX))) {
+      format = 'new';
+    } else if ((match = line.match(WHATSAPP_SYSTEM_MESSAGE_REGEX))) {
+      // È un messaggio di sistema, lo ignoriamo
+      continue;
+    } else {
+      // Per debug
+      console.log("Riga non analizzata:", line);
+      continue;
+    }
 
-      if (ignoredMessages.some(ignore =>
-        parsed.message.toLowerCase().includes(ignore.toLowerCase())
-      )) {
-        return [];
-      }
+    // Estrai i componenti dal match in base al formato
+    let date: string, time: string, username: string, message: string;
+    
+    if (format === 'ios') {
+      [, date, time, username, message] = match;
+    } else if (format === 'android') {
+      [, date, time, username, message] = match;
+    } else if (format === 'new') {
+      [, date, time, username, message] = match;
+    } else {
+      continue; // Non dovrebbe mai accadere
+    }
 
-      const [day, month, year] = parsed.date.split('/');
-      const [hours, minutes, seconds = '0'] = parsed.time.split(':');
+    // Skip messaggi di sistema e crittografia
+    if (ignoredMessages.some(text => 
+        (message && message.toLowerCase().includes(text.toLowerCase())) ||
+        (username && username.toLowerCase().includes(text.toLowerCase()))
+    )) {
+      continue;
+    }
 
-      const fullYear = year.length === 2 ? `20${year}` : year;
-      const timestamp = new Date(
-        parseInt(fullYear),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes),
-        parseInt(seconds)
-      );
+    // Parse date and time
+    const timestamp = parseDateTime(date, time);
+    if (!timestamp) {
+      console.warn("Errore nel parsing della data/ora:", date, time);
+      continue;
+    }
 
-      if (isNaN(timestamp.getTime())) {
-        console.warn('Data non valida:', trimmed);
-        return [];
-      }
-
-      return [{
+    // Controllo per i messaggi contenenti media
+    if (message.includes("<Media omessi>")) {
+      normalizedMessages.push({
         timestamp,
-        username: parsed.sender,
-        message: parsed.message
-      }];
+        username: username.trim(),
+        message: "<Media omessi>"
+      });
+      continue;
+    }
+
+    normalizedMessages.push({
+      timestamp,
+      username: username.trim(),
+      message: message.trim()
     });
+  }
+
+  return normalizedMessages;
+}
+
+// Helper function to parse date and time
+function parseDateTime(date: string, time: string): Date | null {
+  try {
+    const [day, month, yearOrDay] = date.split('/');
+    let year = parseInt(yearOrDay.length === 2 ? `20${yearOrDay}` : yearOrDay);
+    const month2 = parseInt(month) - 1;
+    const day2 = parseInt(day);
+
+    const [hour, minute, second] = time.split(':').map(part => parseInt(part));
+    return new Date(year, month2, day2, hour, minute, second || 0);
+  } catch {
+    return null;
+  }
+}
+
+// Helper function to extract emojis from text
+function extractEmojis(text: string): string[] {
+  try {
+    return [...text.matchAll(EMOJI_REGEX)].map(match => match[0]);
+  } catch (error) {
+    console.warn("Errore nell'estrazione emoji:", error);
+    return [];
+  }
 }
 
 export const analyzeChatFile = (fileContent: string): ChatAnalysis => {
   const normalizedMessages = normalizeMessages(fileContent);
   console.log('Messaggi analizzati:', normalizedMessages.length); // Debug
 
+  // Initialize analysis object
   const analysis: ChatAnalysis = {
     totalMessages: normalizedMessages.length,
     mostUsedWord: { word: '', count: 0 },
@@ -112,12 +160,31 @@ export const analyzeChatFile = (fileContent: string): ChatAnalysis => {
     userStats: {}
   };
 
+  // Data structures for analysis
   const wordCounts: Record<string, number> = {};
   const emojiCounts: Record<string, number> = {};
   const dayMessageCounts: Record<string, number> = {};
   const responseTimes: number[] = [];
+  const lastMessageTime: Record<string, Date> = {};
 
-  normalizedMessages.forEach(({ timestamp, username, message }, index) => {
+  for (const { timestamp, username, message } of normalizedMessages) {
+    // Count media messages
+    if (message === "<Media omessi>") {
+      analysis.mediaCount++;
+      
+      // Aggiungiamo comunque il messaggio ai conteggi dell'utente
+      if (!analysis.userStats[username]) {
+        analysis.userStats[username] = {
+          messageCount: 0,
+          wordCount: 0,
+          emojiCount: 0
+        };
+      }
+      analysis.userStats[username].messageCount++;
+      continue;
+    }
+
+    // Initialize user stats if not exists
     if (!analysis.userStats[username]) {
       analysis.userStats[username] = {
         messageCount: 0,
@@ -125,64 +192,77 @@ export const analyzeChatFile = (fileContent: string): ChatAnalysis => {
         emojiCount: 0
       };
     }
+
+    // Count messages per user
     analysis.userStats[username].messageCount++;
 
-    // Analisi periodo del giorno
+    // Count messages per day
+    const dayKey = timestamp.toISOString().split('T')[0];
+    dayMessageCounts[dayKey] = (dayMessageCounts[dayKey] || 0) + 1;
+
+    // Time of day analysis
     const hour = timestamp.getHours();
-    if (hour >= 6 && hour < 12) analysis.timeOfDayStats.morning++;
-    else if (hour >= 12 && hour < 18) analysis.timeOfDayStats.afternoon++;
-    else if (hour >= 18 && hour < 22) analysis.timeOfDayStats.evening++;
-    else analysis.timeOfDayStats.night++;
-
-    // Conteggio parole
-    const words = message.toLowerCase().match(/\b\w{5,}\b/g) || [];
-    words.forEach(word => {
-      wordCounts[word] = (wordCounts[word] || 0) + 1;
-      analysis.userStats[username].wordCount++;
-    });
-
-    // Conteggio emoji (fallback per browser senza supporto Unicode)
-    try {
-      const emojis = message.match(EMOJI_REGEX) || [];
-      emojis.forEach(emoji => {
-        emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1;
-        analysis.userStats[username].emojiCount++;
-      });
-    } catch (e) {
-      console.warn('Errore analisi emoji:', e);
+    if (hour >= TIME_PERIODS.morning.start && hour < TIME_PERIODS.morning.end) {
+      analysis.timeOfDayStats.morning++;
+    } else if (hour >= TIME_PERIODS.afternoon.start && hour < TIME_PERIODS.afternoon.end) {
+      analysis.timeOfDayStats.afternoon++;
+    } else if (hour >= TIME_PERIODS.evening.start && hour < TIME_PERIODS.evening.end) {
+      analysis.timeOfDayStats.evening++;
+    } else {
+      analysis.timeOfDayStats.night++;
     }
 
-    // Media e tempi di risposta
-    if (message.match(/<media omessi>|immagine omessa/i)) {
-      analysis.mediaCount++;
-    }
-
-    if (index > 0) {
-      const prev = normalizedMessages[index - 1];
-      if (prev.username !== username) {
-        const diff = (timestamp.getTime() - prev.timestamp.getTime()) / 1000;
-        if (diff > 0 && diff < 86400) responseTimes.push(diff);
+    // Word analysis
+    const words = message.toLowerCase().split(/\s+/);
+    for (const word of words) {
+      const cleanWord = word.replace(/[^\w\sàèéìòù]/g, '').trim();
+      if (cleanWord && cleanWord.length >= 3) {
+        wordCounts[cleanWord] = (wordCounts[cleanWord] || 0) + 1;
+        analysis.userStats[username].wordCount++;
       }
     }
 
-    // Conteggio per giorno
-    const dateKey = timestamp.toISOString().split('T')[0];
-    dayMessageCounts[dateKey] = (dayMessageCounts[dateKey] || 0) + 1;
-  });
+    // Emoji analysis
+    const emojis = extractEmojis(message);
+    for (const emoji of emojis) {
+      emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1;
+      analysis.userStats[username].emojiCount++;
+    }
 
-  // Calcoli finali
-  if (responseTimes.length > 0) {
-    analysis.averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+    // Calculate response time
+    const otherUsers = Object.keys(lastMessageTime).filter(user => user !== username);
+    if (otherUsers.length > 0) {
+      const lastOtherUserMessage = Math.max(...otherUsers.map(user => lastMessageTime[user].getTime()));
+      const responseTime = (timestamp.getTime() - lastOtherUserMessage) / 1000; // in seconds
+      if (responseTime > 0 && responseTime < 86400) {
+        responseTimes.push(responseTime);
+      }
+    }
+
+    lastMessageTime[username] = timestamp;
   }
 
-  analysis.mostUsedWord = Object.entries(wordCounts).reduce((max, [word, count]) =>
-    count > max.count ? { word, count } : max, { word: '', count: 0 });
+  // Finalize analysis
+  if (responseTimes.length > 0) {
+    const sum = responseTimes.reduce((a, b) => a + b, 0);
+    analysis.averageResponseTime = sum / responseTimes.length;
+  }
 
-  analysis.mostUsedEmoji = Object.entries(emojiCounts).reduce((max, [emoji, count]) =>
-    count > max.count ? { emoji, count } : max, { emoji: '', count: 0 });
+  // Find most used word and emoji
+  analysis.mostUsedWord = Object.entries(wordCounts).reduce(
+    (max, [word, count]) => (count > max.count ? { word, count } : max),
+    { word: '', count: 0 }
+  );
+  analysis.mostUsedEmoji = Object.entries(emojiCounts).reduce(
+    (max, [emoji, count]) => (count > max.count ? { emoji, count } : max),
+    { emoji: '', count: 0 }
+  );
 
-  analysis.dayWithMostMessages = Object.entries(dayMessageCounts).reduce((max, [date, count]) =>
-    count > max.count ? { date, count } : max, { date: '', count: 0 });
+  // Find the day with the most messages
+  analysis.dayWithMostMessages = Object.entries(dayMessageCounts).reduce(
+    (max, [date, count]) => (count > max.count ? { date, count } : max),
+    { date: '', count: 0 }
+  );
 
   return analysis;
 };
