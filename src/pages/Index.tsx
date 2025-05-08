@@ -84,7 +84,7 @@ const Index = () => {
                   Scopri l' <span className="text-primary">MVP</span> della tua chat
                 </h2>
                 <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8">
-                  Come ottenere il file da WhatsApp?
+                  Rivivi le tue conversazioni WhatsApp: Analisi e Statistiche Personalizzate
                 </p>
 
                 <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 md:p-6 mb-6 shadow-md border border-white/30">
@@ -104,7 +104,7 @@ const Index = () => {
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">4.</span>
-                      <span>Clicca su esporta chat e poi senza media</span>
+                      <span>Clicca su esporta chat e poi "senza media"</span>
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">5.</span>

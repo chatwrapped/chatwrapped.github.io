@@ -170,7 +170,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
           <div className="mb-auto">
             <div className="text-center mb-6 md:mb-8">
               <h1 className="text-3xl md:text-4xl font-black mb-1 md:mb-2">ChatWrapped</h1>
-              <p className="text-xs md:text-sm opacity-70">Il tuo anno in chat</p>
+              <p className="text-xs md:text-sm opacity-70">La tua chat in una card</p>
             </div>
 
             {/* Stats with icons */}
@@ -186,7 +186,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
                 <Star className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />
                 {secondMostActiveUser && (
                   <span>
-                    <span className="text-yellow-200 font-black">{mostActiveUser}</span> è stato il più attivo nella chat
+                    <span className="text-yellow-200 font-black">{mostActiveUser}</span> è più attivo/a nella chat
                   </span>
                 )}
               </div>
