@@ -33,7 +33,8 @@ const EMOJI_REGEX = /\p{Emoji}/gu;
 // - Formato con timestamp senza secondi: [20/11/23, 17:30] Username: Message
 // - Formato senza parentesi quadre: 20/11/23, 17:30 - Username: Message
 // - Formato nuovo: 20/11/23, 17:30 - Username:Message (senza spazio)
-const WHATSAPP_MESSAGE_REGEX = /(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)\]?[\s-]+(?:([^:\n]+):)?\s?(.+?)$/;
+const WHATSAPP_MESSAGE_REGEX = /(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)\]?[\s-]+([^:\n]+?):\s*(.+)$/;
+
 
 // Regex per i messaggi di sistema
 const WHATSAPP_SYSTEM_REGEX = /^(?:\[)?(\d{2}\/\d{2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*-\s*(.+)$/;
@@ -63,46 +64,35 @@ const IGNORED_MESSAGES = [
 function cleanFileContent(fileContent: string): string {
   console.log("Cleaning file content...");
 
-  // Rimuove caratteri di controllo invisibili
-  let cleanedContent = fileContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+  const messageStartRegex = /^(\[)?\d{1,2}\/\d{1,2}\/\d{2,4},\s\d{1,2}:\d{2}(?:\s?[AP]M)?(?:(1)\])?\s?-?\s?.+/;
 
-  // Rimuove spazi bianchi all'inizio e alla fine di ogni riga
-  cleanedContent = cleanedContent.split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .join('\n');
+  const lines = fileContent.split('\n').map(line =>
+    line.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trimEnd()
+  );
 
-  // Identifica e consolida messaggi multi-line
-  const consolidatedLines: string[] = [];
-  let currentMessage = "";
-  let isMultiline = false;
-  const regex = /(?:\[)?(\d{2}\/\d{2}\/\d{2}),\s/;
+  let result = '';
 
-  cleanedContent.split('\n').forEach(line => {
-    // Se la riga inizia con un timestamp (data e ora)
-    if (regex.test(line)) {
-      if (currentMessage) {
-        consolidatedLines.push(currentMessage);
-      }
-      currentMessage = line;
-      isMultiline = false;
-    } else {
-      // È una continuazione del messaggio precedente
-      if (currentMessage) {
-        currentMessage += " " + line.trim();
-        isMultiline = true;
-      }
+  for (let i = 0; i < lines.length; i++) {
+    const currentLine = lines[i];
+    const nextLine = lines[i + 1];
+
+    result += currentLine;
+
+    // Se la prossima riga è un nuovo messaggio, mantieni il \n
+    if (i + 1 < lines.length && messageStartRegex.test(nextLine)) {
+      result += '\n';
+    } else if (i + 1 < lines.length) {
+      result += ' ';
     }
-  });
-
-  // Aggiungi l'ultimo messaggio se presente
-  if (currentMessage) {
-    consolidatedLines.push(currentMessage);
   }
-
-  console.log(`File pulito: ${consolidatedLines.length} messaggi dopo la pulizia`);
-  return consolidatedLines.join('\n');
+  console.log(result)
+  return result.trim();
 }
+
+
+
+
+
 
 function normalizeMessages(fileContent: string): Array<{ timestamp: Date; username: string; message: string }> {
   console.log("Normalizing messages...");
