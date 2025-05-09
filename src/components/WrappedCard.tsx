@@ -188,7 +188,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     }
   };
 
-  // Generate dynamic stats with Spotify-like styling
+  // Generate dynamic stats with Spotify-like styling, limiting to maximum 6 for no scroll
   const getDynamicStats = () => {
     const users = getMostFrequentUsers();
     const mostActiveUser = users.length ? users[0] : "nessuno";
@@ -264,54 +264,14 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
       });
     }
     
-    // Time of day
-    stats.push({
-      icon: <Calendar className="w-6 h-6 text-green-200" />,
-      title: "Scrivete principalmente di",
-      value: timeOfDay,
-      color: "bg-spotify-green",
-      delay: 6
-    });
-
-    // Total words
-    stats.push({
-      icon: <Award className="w-6 h-6 text-yellow-200" />,
-      title: "Parole totali",
-      value: totalWords.toLocaleString(),
-      color: "bg-spotify-purple",
-      delay: 7
-    });
-    
-    // Total emojis if significant
-    if (totalEmojis > 50) {
-      stats.push({
-        icon: <Laugh className="w-6 h-6 text-yellow-200" />,
-        title: "Emoji usate",
-        value: totalEmojis.toLocaleString(),
-        color: "bg-spotify-pink",
-        delay: 8
-      });
-    }
-
-    // Most active day
-    if (mostActiveDay) {
-      stats.push({
-        icon: <Calendar className="w-6 h-6 text-blue-200" />,
-        title: "Giorno più attivo",
-        value: mostActiveDay,
-        color: "bg-spotify-blue",
-        delay: 9
-      });
-    }
-
-    // Get all stats now (8 max)
-    return stats.slice(0, 8);
+    // Get all stats but limit to 6 max to avoid scrolling
+    return stats.slice(0, 6);
   };
 
   return (
     <div className="w-full px-4 max-w-md mx-auto animate-fade-in">
       <div className="mb-6 md:mb-8 text-center">
-        <h2 className="spotify-medium-text text-primary mb-2">La tua ChatWrapped 2024</h2>
+        <h2 className="spotify-medium-text text-primary mb-2 text-3xl md:text-4xl font-extrabold tracking-tight">La tua ChatWrapped 2024</h2>
         <p className="text-sm md:text-base text-muted-foreground">
           Scaricala e condividila sui social media!
         </p>
@@ -365,7 +325,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
           
           <div className="relative z-10">
             <div className="text-center mb-6 mt-2">
-              <h1 className="spotify-big-text">CHAT<br/>WRAPPED</h1>
+              <h1 className="spotify-big-text text-5xl md:text-6xl">CHAT<br/>WRAPPED</h1>
               <p className="text-base md:text-lg opacity-90 font-semibold tracking-tight">
                 {analysis.totalMessages > 1000 ? "WOW! Che conversazione!" : "La tua chat in numeri"}
               </p>
@@ -384,8 +344,8 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
               </div>
             </div>
 
-            {/* Spotify-style stats */}
-            <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1 spotify-stats-container">
+            {/* Spotify-style stats - fixed height with no scroll */}
+            <div className="space-y-2.5">
               {getDynamicStats().map((stat, index) => (
                 <div 
                   key={index} 

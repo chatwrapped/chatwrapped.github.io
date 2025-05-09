@@ -1,3 +1,4 @@
+
 import React from "react";
 import { ChatAnalysis } from "@/utils/chatAnalyzer";
 import {
@@ -154,7 +155,7 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
               </CardHeader>
               <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                  <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <Pie
                       data={timeOfDayData}
                       cx="50%"
@@ -166,7 +167,9 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
                       labelLine={false}
                       label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
                         const RADIAN = Math.PI / 180;
-                        const radius = 25 + innerRadius + (outerRadius - innerRadius);
+                        // Adjust radius for better positioning
+                        const radius = 25 + innerRadius + (outerRadius - innerRadius) * 0.7;
+                        // Calculate position with adjusted radius
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import FileUploader from "@/components/FileUploader";
 import { analyzeChatFile, ChatAnalysis } from "@/utils/chatAnalyzer";
@@ -64,14 +63,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="py-4 md:py-6 px-4">
+      <header className="py-6 md:py-10 px-4 relative">
         <div className="container">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-center text-white tracking-tight drop-shadow-md">
-            ChatWrapped
+          <h1 className="text-4xl md:text-6xl font-extrabold text-center text-white tracking-tight drop-shadow-lg">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
+              ChatWrapped
+            </span>
           </h1>
-          <p className="text-center text-white/90 mt-1 md:mt-2 text-base md:text-lg font-medium">
+          <p className="text-center text-white/90 mt-2 md:mt-3 text-base md:text-xl font-medium">
             Scopri le statistiche delle tue conversazioni
           </p>
+          <div className="absolute -inset-1 bg-white/5 blur-xl rounded-full -z-10"></div>
         </div>
       </header>
 
