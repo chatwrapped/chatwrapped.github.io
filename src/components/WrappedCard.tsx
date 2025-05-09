@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { ChatAnalysis } from "@/utils/chatAnalyzer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Award, Calendar, Clock, Heart, Laugh, MessageSquare, Music, Star } from "lucide-react";
+import { ArrowLeft, Award, Calendar, Clock, Heart, Laugh, MessageSquare, Music, Star, WholeWord } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import html2canvas from "html2canvas";
@@ -92,35 +92,31 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
 
   const getRandomFunFact = () => {
     const funFacts = [
-      analysis.totalMessages > 1000 
-        ? `Con ${analysis.totalMessages} messaggi, avreste potuto scrivere un piccolo libro!` 
+      analysis.totalMessages > 1000
+        ? `Con ${analysis.totalMessages} messaggi, avreste potuto scrivere un piccolo libro!`
         : `${analysis.totalMessages} messaggi, una conversazione piacevole!`,
-      
-      analysis.averageResponseTime < 60 
-        ? "Rispondete quasi istantaneamente! Siete sempre connessi." 
-        : "A volte ci mettete un po' a rispondere... forse state riflettendo?",
-      
-      analysis.mostUsedEmoji.emoji 
-        ? `${analysis.mostUsedEmoji.emoji} è la vostra emoji preferita! La usate per esprimere ${getEmojiMood(analysis.mostUsedEmoji.emoji)}` 
-        : "Non usate molte emoji... preferite le parole!",
-      
-      analysis.mostUsedWord.word 
-        ? `"${analysis.mostUsedWord.word}" compare davvero spesso nei vostri discorsi!` 
+
+      analysis.averageResponseTime < 60
+        ? "Rispondete quasi istantaneamente! Siete sempre connessi."
+        : "Ci mettete un po' a rispondere... forse state riflettendo?",
+
+      analysis.mostUsedWord.word
+        ? `"${analysis.mostUsedWord.word}" compare davvero spesso nei vostri discorsi!`
         : "Le vostre conversazioni sono molto varie e diversificate!",
-      
-      getTimeOfDayStats() === "notte" 
-        ? "Siete nottambuli! Le vostre conversazioni più intense avvengono di notte." 
+
+      getTimeOfDayStats() === "notte"
+        ? "Siete nottambuli! Le vostre conversazioni più intense avvengono di notte."
         : `Vi piace chattare di ${getTimeOfDayStats()}. È il vostro momento preferito!`,
-      
-      getTotalWords() > 5000 
-        ? `Avete scritto ${getTotalWords()} parole! Sarebbe un saggio universitario!` 
+
+      getTotalWords() > 5000
+        ? `Avete scritto ${getTotalWords()} parole! Sarebbe un saggio universitario!`
         : `${getTotalWords()} parole: sintetici ma efficaci!`,
-      
-      getTotalEmojis() > 100 
-        ? `${getTotalEmojis()} emoji! Siete veri artisti dell'espressività digitale!` 
+
+      getTotalEmojis() > 100
+        ? `${getTotalEmojis()} emoji! Siete veri artisti dell'espressività digitale!`
         : `Solo ${getTotalEmojis()} emoji. Preferite le parole ai simboli!`
     ];
-    
+
     // Prendi un fatto casuale dalla lista
     return funFacts[Math.floor(Math.random() * funFacts.length)];
   };
@@ -139,7 +135,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
       "😭": "emozione",
       "😘": "affetto"
     };
-    
+
     return emojiMoods[emoji] || "le tue emozioni";
   };
 
@@ -199,7 +195,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     const totalEmojis = getTotalEmojis();
     const mostActiveDay = getMostActiveDay();
     const avgMessagesPerUser = getAvgMessagesPerUser();
-    
+
     let stats = [
       // Most active user - always first
       {
@@ -209,7 +205,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         color: "bg-spotify-purple",
         delay: 0
       },
-      
+
       // Messages count
       {
         icon: <MessageSquare className="w-6 h-6 text-blue-200" />,
@@ -219,17 +215,6 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         color: "bg-spotify-blue",
         delay: 1
       },
-      
-      // Messages per day
-      {
-        icon: <Calendar className="w-6 h-6 text-green-200" />,
-        title: "Media giornaliera",
-        value: messagesPerDay.toString(),
-        suffix: " messaggi",
-        color: "bg-spotify-green",
-        delay: 2
-      },
-
       // Response time
       {
         icon: <Clock className="w-6 h-6 text-blue-200" />,
@@ -239,11 +224,11 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         delay: 3
       }
     ];
-    
+
     // Favorite word if exists
     if (analysis.mostUsedWord.word) {
       stats.push({
-        icon: <Heart className="w-6 h-6 text-pink-200" />,
+        icon: <WholeWord className="w-6 h-6 text-pink-200" />,
         title: "Parola preferita",
         value: `"${analysis.mostUsedWord.word}"`,
         suffix: ` (${analysis.mostUsedWord.count}x)`,
@@ -251,11 +236,27 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         delay: 4
       });
     }
-    
+
     // Emoji if exists
     if (analysis.mostUsedEmoji.emoji) {
       stats.push({
-        icon: <span className="text-3xl">{analysis.mostUsedEmoji.emoji}</span>,
+        icon: (
+          <span
+            className="text-2xl"
+            style={{
+              fontFamily: "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji','Android Emoji',sans-serif'",
+              fontSize: "24px",
+              display: "inline-block",
+              lineHeight: 1,
+              verticalAlign: "middle",
+              height: "1.5em",
+              width: "1.5em",
+              textAlign: "center",
+            }}
+          >
+            {analysis.mostUsedEmoji.emoji}
+          </span>
+        ),
         title: "Emoji preferita",
         value: analysis.mostUsedEmoji.emoji,
         suffix: ` (${analysis.mostUsedEmoji.count}x)`,
@@ -263,7 +264,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         delay: 5
       });
     }
-    
+
     // Get all stats but limit to 6 max to avoid scrolling
     return stats.slice(0, 6);
   };
@@ -271,7 +272,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
   return (
     <div className="w-full px-4 max-w-md mx-auto animate-fade-in">
       <div className="mb-6 md:mb-8 text-center">
-        <h2 className="spotify-medium-text text-primary mb-2 text-3xl md:text-4xl font-extrabold tracking-tight">La tua ChatWrapped 2024</h2>
+        <h2 className="spotify-medium-text text-primary mb-2 text-3xl md:text-4xl font-extrabold tracking-tight">La tua Chat</h2>
         <p className="text-sm md:text-base text-muted-foreground">
           Scaricala e condividila sui social media!
         </p>
@@ -322,20 +323,20 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         >
           {/* Spotify-style noise overlay */}
           <div className="noise-overlay"></div>
-          
+
           <div className="relative z-10">
             <div className="text-center mb-6 mt-2">
-              <h1 className="spotify-big-text text-5xl md:text-6xl">CHAT<br/>WRAPPED</h1>
+              <h1 className="spotify-big-text text-3xl md:text-3xl">CHAT<br />WRAPPED</h1>
               <p className="text-base md:text-lg opacity-90 font-semibold tracking-tight">
-                {analysis.totalMessages > 1000 ? "WOW! Che conversazione!" : "La tua chat in numeri"}
+                {analysis.totalMessages > 1000 ? "Che conversazione!" : "La tua chat in numeri"}
               </p>
             </div>
 
             {/* Dynamic fun fact */}
             <div className="mb-3 px-2">
-              <div 
+              <div
                 className="p-4 rounded-xl text-center bg-white/10 backdrop-blur-sm border-l-4 border-white/30 shadow-xl"
-                style={{ 
+                style={{
                   animation: animationStarted ? 'scale-in 0.5s ease-out forwards' : 'none',
                   opacity: 0
                 }}
@@ -347,15 +348,16 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
             {/* Spotify-style stats - fixed height with no scroll */}
             <div className="space-y-2.5">
               {getDynamicStats().map((stat, index) => (
-                <div 
-                  key={index} 
-                  className="spotify-stat flex items-center" 
-                  style={{ 
+                <div
+                  key={index}
+                  className="spotify-stat flex items-center"
+                  style={{
                     '--delay': stat.delay,
                     opacity: animationStarted ? 1 : 0,
                     transform: animationStarted ? 'translateY(0)' : 'translateY(10px)',
                     transition: `all 0.4s ease ${stat.delay * 0.15}s`,
                     background: 'rgba(255,255,255,0.1)',
+                    margin: "5px"
                   } as React.CSSProperties}
                 >
                   <div className="rounded-full p-2 bg-white/15 flex-shrink-0">
@@ -376,7 +378,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
           </div>
 
           <div className="text-center text-xs md:text-sm opacity-80 relative z-10 mt-auto pt-4">
-            <p className="font-semibold">ChatWrapped 2024</p>
+            <p className="font-semibold">ChatWrapped</p>
           </div>
         </div>
       </div>
