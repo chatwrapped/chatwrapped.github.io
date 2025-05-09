@@ -2,7 +2,7 @@
 import React, { useRef, useState } from "react";
 import { ChatAnalysis } from "@/utils/chatAnalyzer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Star, MessageSquare, Calendar, Clock, Award, Laugh } from "lucide-react";
+import { ArrowLeft, Award, Calendar, Clock, Heart, Laugh, MessageSquare, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import html2canvas from "html2canvas";
@@ -19,6 +19,7 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  // Helper functions
   const formatResponseTime = (seconds: number): string => {
     if (seconds < 60) {
       return `${Math.round(seconds)} secondi`;
@@ -76,6 +77,11 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     return Math.round(analysis.totalMessages / 30);
   };
 
+  const getAvgMessagesPerUser = () => {
+    const userCount = Object.keys(analysis.userStats).length;
+    return userCount > 0 ? Math.round(analysis.totalMessages / userCount) : 0;
+  };
+
   const downloadCard = async () => {
     if (cardRef.current) {
       try {
@@ -119,8 +125,8 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     }
   };
 
-  // Dynamic text generation based on stats
-  const getDynamicText = () => {
+  // Generate dynamic stats with Spotify-like styling
+  const getDynamicStats = () => {
     const users = getMostFrequentUsers();
     const mostActiveUser = users.length ? users[0] : "nessuno";
     const timeOfDay = getTimeOfDayStats();
@@ -129,95 +135,120 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     const totalWords = getTotalWords();
     const totalEmojis = getTotalEmojis();
     const mostActiveDay = getMostActiveDay();
+    const avgMessagesPerUser = getAvgMessagesPerUser();
     
-    let texts = [];
-    
-    // Most active user
-    if (users.length > 1) {
-      texts.push({
-        icon: <Star className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-        text: <><span className="text-yellow-200 font-black">{mostActiveUser}</span> è il protagonista di questa chat</>
-      });
-    }
-    
-    // Messages count
-    texts.push({
-      icon: <MessageSquare className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-      text: analysis.totalMessages > 1000 
-        ? <>Incredibile! Avete scambiato <span className="text-yellow-200 font-black">{analysis.totalMessages}</span> messaggi</>
-        : <>Avete scambiato <span className="text-yellow-200 font-black">{analysis.totalMessages}</span> messaggi</>
-    });
-    
-    // Messages per day
-    texts.push({
-      icon: <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-      text: messagesPerDay > 20
-        ? <>Vi scrivete in media <span className="text-yellow-200 font-black">{messagesPerDay}</span> messaggi al giorno</>
-        : <>Scambiate circa <span className="text-yellow-200 font-black">{messagesPerDay}</span> messaggi al giorno</>
-    });
+    let stats = [
+      // Most active user - always first
+      {
+        icon: <Star className="w-6 h-6 text-yellow-200" />,
+        title: "Il protagonista assoluto",
+        value: mostActiveUser,
+        color: "bg-spotify-purple",
+        delay: 0
+      },
+      
+      // Messages count
+      {
+        icon: <MessageSquare className="w-6 h-6 text-blue-200" />,
+        title: "Messaggi totali",
+        value: analysis.totalMessages.toLocaleString(),
+        suffix: analysis.totalMessages > 1000 ? " 🤯" : "",
+        color: "bg-spotify-blue",
+        delay: 1
+      },
+      
+      // Messages per day
+      {
+        icon: <Calendar className="w-6 h-6 text-green-200" />,
+        title: "Media giornaliera",
+        value: messagesPerDay.toString(),
+        suffix: " messaggi",
+        color: "bg-spotify-green",
+        delay: 2
+      },
 
-    // Response time
-    texts.push({
-      icon: <Clock className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-      text: <>Tempo di risposta medio: <span className="text-yellow-200 font-black">{responseTime}</span></>
-    });
+      // Response time
+      {
+        icon: <Clock className="w-6 h-6 text-blue-200" />,
+        title: "Tempo di risposta",
+        value: responseTime,
+        color: "bg-spotify-blue",
+        delay: 3
+      }
+    ];
     
     // Favorite word if exists
     if (analysis.mostUsedWord.word) {
-      texts.push({
-        icon: <Heart className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-        text: <>La parola '<span className="text-yellow-200 font-black">{analysis.mostUsedWord.word}</span>' compare {analysis.mostUsedWord.count} volte</>
+      stats.push({
+        icon: <Heart className="w-6 h-6 text-pink-200" />,
+        title: "Parola preferita",
+        value: `"${analysis.mostUsedWord.word}"`,
+        suffix: ` (${analysis.mostUsedWord.count}x)`,
+        color: "bg-spotify-pink",
+        delay: 4
       });
     }
     
     // Emoji if exists
     if (analysis.mostUsedEmoji.emoji) {
-      texts.push({
-        icon: <span className="text-2xl md:text-3xl">{analysis.mostUsedEmoji.emoji}</span>,
-        text: <>La vostra emoji preferita usata {analysis.mostUsedEmoji.count} volte</>
+      stats.push({
+        icon: <span className="text-3xl">{analysis.mostUsedEmoji.emoji}</span>,
+        title: "Emoji preferita",
+        value: analysis.mostUsedEmoji.emoji,
+        suffix: ` (${analysis.mostUsedEmoji.count}x)`,
+        color: "bg-spotify-orange",
+        delay: 5
       });
     }
     
     // Time of day
-    texts.push({
-      icon: <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-      text: <>Vi scrivete soprattutto di <span className="text-yellow-200 font-black">{timeOfDay}</span></>
+    stats.push({
+      icon: <Calendar className="w-6 h-6 text-green-200" />,
+      title: "Scrivete principalmente di",
+      value: timeOfDay,
+      color: "bg-spotify-green",
+      delay: 6
     });
 
     // Total words
-    texts.push({
-      icon: <Award className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-      text: <>Avete scritto un totale di <span className="text-yellow-200 font-black">{totalWords}</span> parole</>
+    stats.push({
+      icon: <Award className="w-6 h-6 text-yellow-200" />,
+      title: "Parole totali",
+      value: totalWords.toLocaleString(),
+      color: "bg-spotify-purple",
+      delay: 7
     });
     
     // Total emojis if significant
     if (totalEmojis > 50) {
-      texts.push({
-        icon: <Laugh className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-        text: <>Usate molto le emoji: <span className="text-yellow-200 font-black">{totalEmojis}</span> in totale</>
+      stats.push({
+        icon: <Laugh className="w-6 h-6 text-yellow-200" />,
+        title: "Emoji usate",
+        value: totalEmojis.toLocaleString(),
+        color: "bg-spotify-pink",
+        delay: 8
       });
     }
 
     // Most active day
     if (mostActiveDay) {
-      texts.push({
-        icon: <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
-        text: <>Il giorno più attivo è stato <span className="text-yellow-200 font-black">{mostActiveDay}</span></>
+      stats.push({
+        icon: <Calendar className="w-6 h-6 text-blue-200" />,
+        title: "Giorno più attivo",
+        value: mostActiveDay,
+        color: "bg-spotify-blue",
+        delay: 9
       });
     }
     
-    // Select dynamic texts to display
-    return texts.slice(0, 6);
+    // Get top 6 stats
+    return stats.slice(0, 6);
   };
-
-  const users = getMostFrequentUsers();
-  const mostActiveUser = users.length ? users[0] : "nessuno";
 
   return (
     <div className="w-full px-4 max-w-md mx-auto animate-fade-in">
-
       <div className="mb-6 md:mb-8 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">La tua ChatWrapped</h2>
+        <h2 className="spotify-medium-text text-primary mb-2">La tua ChatWrapped 2024</h2>
         <p className="text-sm md:text-base text-muted-foreground">
           Scaricala e condividila sui social media!
         </p>
@@ -257,35 +288,50 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
       <div className="phone-mockup mx-auto">
         <div
           ref={cardRef}
-          className={`wrapped-card text-white ${getCardClass()}`}
+          className={`wrapped-card ${getCardClass()}`}
         >
-          <div className="mb-auto relative z-10">
-            <div className="text-center mb-6">
-              <h1 className="text-3xl md:text-4xl font-black mb-1 md:mb-2">ChatWrapped</h1>
-              <p className="text-xs md:text-sm opacity-70">La tua chat in numeri</p>
+          {/* Spotify-style noise overlay */}
+          <div className="noise-overlay"></div>
+          
+          <div className="relative z-10 mb-6">
+            <div className="text-center mb-6 mt-2">
+              <h1 className="spotify-big-text">CHAT<br/>WRAPPED</h1>
+              <p className="text-sm md:text-base opacity-90 font-medium">La tua chat in numeri</p>
             </div>
 
-            {/* Dynamic stats with icons */}
-            <div className="space-y-4">
-              {getDynamicText().map((item, index) => (
-                <div key={index} className="stat-highlight flex items-center gap-2">
-                  {item.icon}
-                  <span>{item.text}</span>
+            {/* Spotify-style stats */}
+            <div className="space-y-3">
+              {getDynamicStats().map((stat, index) => (
+                <div 
+                  key={index} 
+                  className="spotify-stat" 
+                  style={{ 
+                    '--delay': index, 
+                    background: 'rgba(255,255,255,0.1)',
+                    borderLeft: '4px solid rgba(255,255,255,0.3)'
+                  } as React.CSSProperties}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full p-2 bg-white/10 flex-shrink-0">
+                      {stat.icon}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-white/80">{stat.title}</p>
+                      <div className="flex items-baseline gap-1">
+                        <p className="text-xl font-black">{stat.value}</p>
+                        {stat.suffix && (
+                          <span className="text-sm text-white/80">{stat.suffix}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="text-center text-xs md:text-sm opacity-70 mt-4 md:mt-6 relative z-10">
-            Generato con ChatWrapped
-          </div>
-          
-          {/* Modern floating circles pattern */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-[5%] left-[10%] w-40 h-40 rounded-full bg-white opacity-10 blur-xl"></div>
-            <div className="absolute top-[50%] right-[5%] w-56 h-56 rounded-full bg-white opacity-5 blur-xl"></div>
-            <div className="absolute bottom-[10%] left-[20%] w-32 h-32 rounded-full bg-white opacity-10 blur-xl"></div>
-            <div className="absolute top-[30%] left-[60%] w-24 h-24 rounded-full bg-white opacity-8 blur-lg"></div>
+          <div className="text-center text-xs md:text-sm opacity-70 relative z-10 mt-auto pb-2">
+            <p className="font-semibold">ChatWrapped</p>
           </div>
         </div>
       </div>
