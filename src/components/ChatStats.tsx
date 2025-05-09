@@ -1,4 +1,3 @@
-
 import React from "react";
 import { ChatAnalysis } from "@/utils/chatAnalyzer";
 import {
@@ -34,10 +33,10 @@ const COLORS = ["#8B5CF6", "#EC4899", "#3B82F6", "#10B981"];
 const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
   const formatTimeOfDay = (timeOfDay: string): string => {
     const mapping: Record<string, string> = {
-      morning: "Mattina (6-12)",
-      afternoon: "Pomeriggio (12-18)",
-      evening: "Sera (18-22)",
-      night: "Notte (22-6)",
+      morning: "Mattina",
+      afternoon: "Pomeriggio",
+      evening: "Sera",
+      night: "Notte",
     };
     return mapping[timeOfDay] || timeOfDay;
   };
@@ -61,6 +60,10 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
     name: username,
     messages: analysis.userStats[username].messageCount,
   }));
+
+  const renderCustomizedLabel = ({ name, percent }: { name: string, percent: number }) => {
+    return `${name}: ${(percent * 100).toFixed(0)}%`;
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-in">
@@ -151,7 +154,7 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
               </CardHeader>
               <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                     <Pie
                       data={timeOfDayData}
                       cx="50%"
@@ -160,9 +163,27 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
                       outerRadius={90}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, percent }) =>
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      }
+                      labelLine={false}
+                      label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                        const RADIAN = Math.PI / 180;
+                        const radius = 25 + innerRadius + (outerRadius - innerRadius);
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            fill={COLORS[index % COLORS.length]}
+                            textAnchor={x > cx ? 'start' : 'end'}
+                            dominantBaseline="central"
+                            fontSize="12"
+                            fontWeight="500"
+                          >
+                            {`${timeOfDayData[index].name} ${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        );
+                      }}
                     >
                       {timeOfDayData.map((entry, index) => (
                         <Cell
@@ -171,7 +192,7 @@ const ChatStats: React.FC<ChatStatsProps> = ({ analysis, onGenerateCard }) => {
                         />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(value, name) => [value, name]} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>

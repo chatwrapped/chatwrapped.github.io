@@ -128,6 +128,7 @@
   border-radius: 20px;
   position: relative;
   overflow: hidden;
+  background-image: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 40%);
 }
 
 @media (min-width: 768px) {
@@ -139,56 +140,70 @@
 /* Spotify-style stat item */
 .spotify-stat {
   position: relative;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
-  animation: fade-in 0.5s ease-out forwards;
-  animation-delay: calc(var(--delay) * 100ms);
-  opacity: 0;
-  transform: translateY(10px);
-  margin-left: -0.5rem;
-  margin-right: -0.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  border-left: 4px solid rgba(255, 255, 255, 0.3);
 }
 
 .spotify-stat:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
   background: rgba(255, 255, 255, 0.15);
 }
 
-@keyframes fade-in {
+.spotify-stats-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.spotify-stats-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.spotify-stats-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.spotify-stats-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+@keyframes scale-in {
   0% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: scale(0.9);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
 /* Spotify style gradient backgrounds */
+.bg-spotify-purple {
+  background: linear-gradient(125deg, #AF2896 0%, #509BF5 100%);
+}
+
 .bg-spotify-green {
-  background: linear-gradient(135deg, #1DB954 0%, #1AA34A 100%);
+  background: linear-gradient(125deg, #1DB954 0%, #004D25 100%);
 }
 
 .bg-spotify-pink {
-  background: linear-gradient(135deg, #F774C8 0%, #C449A7 100%);
+  background: linear-gradient(125deg, #F774C8 0%, #9D2C8D 100%);
 }
 
 .bg-spotify-blue {
-  background: linear-gradient(135deg, #509BF5 0%, #2D72CE 100%);
-}
-
-.bg-spotify-purple {
-  background: linear-gradient(135deg, #AF2896 0%, #791A69 100%);
+  background: linear-gradient(125deg, #509BF5 0%, #194080 100%);
 }
 
 .bg-spotify-orange {
-  background: linear-gradient(135deg, #FF9D00 0%, #E68600 100%);
+  background: linear-gradient(125deg, #FF9D00 0%, #994500 100%);
 }
 
 /* Modified gradient background classes */
@@ -211,12 +226,25 @@
 /* Spotify style big text */
 .spotify-big-text {
   font-size: 2.5rem;
-  line-height: 1.1;
+  line-height: 1;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: -1px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: pulse 4s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px rgba(255,255,255,0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+  }
 }
 
 .spotify-medium-text {
@@ -239,9 +267,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.05;
   pointer-events: none;
+  mix-blend-mode: overlay;
 }
 
 /* Aggiunti stili per migliorare l'aspetto dell'app con il nuovo gradiente */

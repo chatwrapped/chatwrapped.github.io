@@ -1,8 +1,8 @@
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { ChatAnalysis } from "@/utils/chatAnalyzer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Award, Calendar, Clock, Heart, Laugh, MessageSquare, Star } from "lucide-react";
+import { ArrowLeft, Award, Calendar, Clock, Heart, Laugh, MessageSquare, Music, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import html2canvas from "html2canvas";
@@ -16,8 +16,16 @@ interface WrappedCardProps {
 const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardTheme, setCardTheme] = useState<string>("purple");
+  const [animationStarted, setAnimationStarted] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    // Start animation after component mount
+    setTimeout(() => {
+      setAnimationStarted(true);
+    }, 300);
+  }, []);
 
   // Helper functions
   const formatResponseTime = (seconds: number): string => {
@@ -82,6 +90,59 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     return userCount > 0 ? Math.round(analysis.totalMessages / userCount) : 0;
   };
 
+  const getRandomFunFact = () => {
+    const funFacts = [
+      analysis.totalMessages > 1000 
+        ? `Con ${analysis.totalMessages} messaggi, avreste potuto scrivere un piccolo libro!` 
+        : `${analysis.totalMessages} messaggi, una conversazione piacevole!`,
+      
+      analysis.averageResponseTime < 60 
+        ? "Rispondete quasi istantaneamente! Siete sempre connessi." 
+        : "A volte ci mettete un po' a rispondere... forse state riflettendo?",
+      
+      analysis.mostUsedEmoji.emoji 
+        ? `${analysis.mostUsedEmoji.emoji} è la vostra emoji preferita! La usate per esprimere ${getEmojiMood(analysis.mostUsedEmoji.emoji)}` 
+        : "Non usate molte emoji... preferite le parole!",
+      
+      analysis.mostUsedWord.word 
+        ? `"${analysis.mostUsedWord.word}" compare davvero spesso nei vostri discorsi!` 
+        : "Le vostre conversazioni sono molto varie e diversificate!",
+      
+      getTimeOfDayStats() === "notte" 
+        ? "Siete nottambuli! Le vostre conversazioni più intense avvengono di notte." 
+        : `Vi piace chattare di ${getTimeOfDayStats()}. È il vostro momento preferito!`,
+      
+      getTotalWords() > 5000 
+        ? `Avete scritto ${getTotalWords()} parole! Sarebbe un saggio universitario!` 
+        : `${getTotalWords()} parole: sintetici ma efficaci!`,
+      
+      getTotalEmojis() > 100 
+        ? `${getTotalEmojis()} emoji! Siete veri artisti dell'espressività digitale!` 
+        : `Solo ${getTotalEmojis()} emoji. Preferite le parole ai simboli!`
+    ];
+    
+    // Prendi un fatto casuale dalla lista
+    return funFacts[Math.floor(Math.random() * funFacts.length)];
+  };
+
+  const getEmojiMood = (emoji: string) => {
+    // Semplice mappa di alcune emoji comuni
+    const emojiMoods: Record<string, string> = {
+      "😂": "divertimento",
+      "❤️": "affetto",
+      "😍": "ammirazione",
+      "👍": "approvazione",
+      "🙏": "gratitudine",
+      "🥰": "amore",
+      "😊": "felicità",
+      "🔥": "entusiasmo",
+      "😭": "emozione",
+      "😘": "affetto"
+    };
+    
+    return emojiMoods[emoji] || "le tue emozioni";
+  };
+
   const downloadCard = async () => {
     if (cardRef.current) {
       try {
@@ -115,13 +176,15 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
   const getCardClass = () => {
     switch (cardTheme) {
       case "green":
-        return "bg-gradient-green";
+        return "bg-spotify-green";
       case "pink":
-        return "bg-gradient-pink";
+        return "bg-spotify-pink";
       case "blue":
-        return "bg-gradient-blue";
+        return "bg-spotify-blue";
+      case "orange":
+        return "bg-spotify-orange";
       default:
-        return "bg-gradient-purple";
+        return "bg-spotify-purple";
     }
   };
 
@@ -240,9 +303,9 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         delay: 9
       });
     }
-    
-    // Get top 6 stats
-    return stats.slice(0, 6);
+
+    // Get all stats now (8 max)
+    return stats.slice(0, 8);
   };
 
   return (
@@ -258,30 +321,37 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         <Button
           variant={cardTheme === "purple" ? "default" : "outline"}
           onClick={() => setCardTheme("purple")}
-          className="bg-gradient-purple text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
+          className="bg-spotify-purple text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
         >
           Viola
         </Button>
         <Button
           variant={cardTheme === "green" ? "default" : "outline"}
           onClick={() => setCardTheme("green")}
-          className="bg-gradient-green text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
+          className="bg-spotify-green text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
         >
           Verde
         </Button>
         <Button
           variant={cardTheme === "pink" ? "default" : "outline"}
           onClick={() => setCardTheme("pink")}
-          className="bg-gradient-pink text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
+          className="bg-spotify-pink text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
         >
           Rosa
         </Button>
         <Button
           variant={cardTheme === "blue" ? "default" : "outline"}
           onClick={() => setCardTheme("blue")}
-          className="bg-gradient-blue text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
+          className="bg-spotify-blue text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
         >
           Blu
+        </Button>
+        <Button
+          variant={cardTheme === "orange" ? "default" : "outline"}
+          onClick={() => setCardTheme("orange")}
+          className="bg-spotify-orange text-white border-none hover:opacity-90 text-xs md:text-sm px-3"
+        >
+          Arancio
         </Button>
       </div>
 
@@ -293,36 +363,51 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
           {/* Spotify-style noise overlay */}
           <div className="noise-overlay"></div>
           
-          <div className="relative z-10 mb-6">
+          <div className="relative z-10">
             <div className="text-center mb-6 mt-2">
               <h1 className="spotify-big-text">CHAT<br/>WRAPPED</h1>
-              <p className="text-sm md:text-base opacity-90 font-medium">La tua chat in numeri</p>
+              <p className="text-base md:text-lg opacity-90 font-semibold tracking-tight">
+                {analysis.totalMessages > 1000 ? "WOW! Che conversazione!" : "La tua chat in numeri"}
+              </p>
+            </div>
+
+            {/* Dynamic fun fact */}
+            <div className="mb-3 px-2">
+              <div 
+                className="p-4 rounded-xl text-center bg-white/10 backdrop-blur-sm border-l-4 border-white/30 shadow-xl"
+                style={{ 
+                  animation: animationStarted ? 'scale-in 0.5s ease-out forwards' : 'none',
+                  opacity: 0
+                }}
+              >
+                <p className="text-sm md:text-base font-semibold italic">"{getRandomFunFact()}"</p>
+              </div>
             </div>
 
             {/* Spotify-style stats */}
-            <div className="space-y-3">
+            <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1 spotify-stats-container">
               {getDynamicStats().map((stat, index) => (
                 <div 
                   key={index} 
-                  className="spotify-stat" 
+                  className="spotify-stat flex items-center" 
                   style={{ 
-                    '--delay': index, 
+                    '--delay': stat.delay,
+                    opacity: animationStarted ? 1 : 0,
+                    transform: animationStarted ? 'translateY(0)' : 'translateY(10px)',
+                    transition: `all 0.4s ease ${stat.delay * 0.15}s`,
                     background: 'rgba(255,255,255,0.1)',
-                    borderLeft: '4px solid rgba(255,255,255,0.3)'
                   } as React.CSSProperties}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-full p-2 bg-white/10 flex-shrink-0">
-                      {stat.icon}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-white/80">{stat.title}</p>
-                      <div className="flex items-baseline gap-1">
-                        <p className="text-xl font-black">{stat.value}</p>
-                        {stat.suffix && (
-                          <span className="text-sm text-white/80">{stat.suffix}</span>
-                        )}
-                      </div>
+                  <div className="rounded-full p-2 bg-white/15 flex-shrink-0">
+                    {stat.icon}
+                  </div>
+                  <div className="flex-1 ml-3">
+                    <p className="text-xs font-medium text-white/90">{stat.title}</p>
+                    <div className="flex items-baseline gap-1">
+                      <p className="text-xl font-black">{stat.value}</p>
+                      {stat.suffix && (
+                        <span className="text-sm text-white/80">{stat.suffix}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -330,8 +415,8 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
             </div>
           </div>
 
-          <div className="text-center text-xs md:text-sm opacity-70 relative z-10 mt-auto pb-2">
-            <p className="font-semibold">ChatWrapped</p>
+          <div className="text-center text-xs md:text-sm opacity-80 relative z-10 mt-auto pt-4">
+            <p className="font-semibold">ChatWrapped 2024</p>
           </div>
         </div>
       </div>
