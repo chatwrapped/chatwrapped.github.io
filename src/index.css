@@ -98,7 +98,7 @@
   width: 100%;
   max-width: 375px;
   height: auto;
-  min-height: 550px; /* Reduced height */
+  min-height: 580px; 
   border-radius: 24px;
   box-shadow: 0 15px 30px -12px rgba(0, 0, 0, 0.25);
   position: relative;
@@ -109,7 +109,7 @@
 @media (min-width: 768px) {
   .phone-mockup {
     width: 375px;
-    height: 700px; /* Reduced height */
+    height: 680px;
     border-radius: 40px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   }
@@ -120,7 +120,7 @@
   animation: gradient-shift 15s ease infinite;
   font-family: 'Inter', sans-serif;
   height: 100%;
-  min-height: 550px; /* Reduced height */
+  min-height: 580px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -145,7 +145,7 @@
 @media (min-width: 768px) {
   .wrapped-card {
     padding: 2rem 1.5rem;
-    min-height: 650px; /* Reduced height */
+    min-height: 680px;
   }
 }
 
@@ -174,25 +174,40 @@
   }
 }
 
-/* Updated gradients to be more vibrant like Spotify Wrapped */
+/* Enhanced gradients for a more vibrant look like Spotify Wrapped */
 .bg-gradient-purple {
-  background: linear-gradient(135deg, #8B5CF6 0%, #4C1D95 100%);
+  background: linear-gradient(135deg, #9b87f5 0%, #5A389A 100%);
   position: relative;
 }
 
 .bg-gradient-green {
-  background: linear-gradient(135deg, #10B981 0%, #047857 100%);
+  background: linear-gradient(135deg, #34D399 0%, #059669 100%);
   position: relative;
 }
 
 .bg-gradient-pink {
-  background: linear-gradient(135deg, #EC4899 0%, #BE185D 100%);
+  background: linear-gradient(135deg, #F472B6 0%, #DB2777 100%);
   position: relative;
 }
 
 .bg-gradient-blue {
-  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  background: linear-gradient(135deg, #60A5FA 0%, #1D4ED8 100%);
   position: relative;
+}
+
+/* Add glowing light effect to the cards */
+.bg-gradient-purple::after,
+.bg-gradient-green::after,
+.bg-gradient-pink::after,
+.bg-gradient-blue::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%);
+  pointer-events: none;
 }
 
 /* Aggiunti stili per migliorare l'aspetto dell'app con il nuovo gradiente */

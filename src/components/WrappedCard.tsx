@@ -1,7 +1,8 @@
+
 import React, { useRef, useState } from "react";
 import { ChatAnalysis } from "@/utils/chatAnalyzer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Star, MessageSquare, Calendar } from "lucide-react";
+import { ArrowLeft, Heart, Star, MessageSquare, Calendar, Clock, Award, Laugh } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import html2canvas from "html2canvas";
@@ -70,6 +71,11 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     );
   };
 
+  const getMessagesPerDay = () => {
+    // Average messages per day (assume 30 days period)
+    return Math.round(analysis.totalMessages / 30);
+  };
+
   const downloadCard = async () => {
     if (cardRef.current) {
       try {
@@ -118,8 +124,11 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     const users = getMostFrequentUsers();
     const mostActiveUser = users.length ? users[0] : "nessuno";
     const timeOfDay = getTimeOfDayStats();
-    const messagesPerDay = Math.round(analysis.totalMessages / 30); // Approssimazione
+    const messagesPerDay = getMessagesPerDay();
     const responseTime = formatResponseTime(analysis.averageResponseTime);
+    const totalWords = getTotalWords();
+    const totalEmojis = getTotalEmojis();
+    const mostActiveDay = getMostActiveDay();
     
     let texts = [];
     
@@ -137,6 +146,20 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
       text: analysis.totalMessages > 1000 
         ? <>Incredibile! Avete scambiato <span className="text-yellow-200 font-black">{analysis.totalMessages}</span> messaggi</>
         : <>Avete scambiato <span className="text-yellow-200 font-black">{analysis.totalMessages}</span> messaggi</>
+    });
+    
+    // Messages per day
+    texts.push({
+      icon: <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+      text: messagesPerDay > 20
+        ? <>Vi scrivete in media <span className="text-yellow-200 font-black">{messagesPerDay}</span> messaggi al giorno</>
+        : <>Scambiate circa <span className="text-yellow-200 font-black">{messagesPerDay}</span> messaggi al giorno</>
+    });
+
+    // Response time
+    texts.push({
+      icon: <Clock className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+      text: <>Tempo di risposta medio: <span className="text-yellow-200 font-black">{responseTime}</span></>
     });
     
     // Favorite word if exists
@@ -160,14 +183,35 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
       icon: <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
       text: <>Vi scrivete soprattutto di <span className="text-yellow-200 font-black">{timeOfDay}</span></>
     });
+
+    // Total words
+    texts.push({
+      icon: <Award className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+      text: <>Avete scritto un totale di <span className="text-yellow-200 font-black">{totalWords}</span> parole</>
+    });
     
-    // Select only 4 dynamic texts to keep the card shorter
-    return texts.slice(0, 4);
+    // Total emojis if significant
+    if (totalEmojis > 50) {
+      texts.push({
+        icon: <Laugh className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+        text: <>Usate molto le emoji: <span className="text-yellow-200 font-black">{totalEmojis}</span> in totale</>
+      });
+    }
+
+    // Most active day
+    if (mostActiveDay) {
+      texts.push({
+        icon: <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+        text: <>Il giorno più attivo è stato <span className="text-yellow-200 font-black">{mostActiveDay}</span></>
+      });
+    }
+    
+    // Select dynamic texts to display
+    return texts.slice(0, 6);
   };
 
   const users = getMostFrequentUsers();
   const mostActiveUser = users.length ? users[0] : "nessuno";
-  const phoneSize = "w-full h-auto min-h-[550px] max-w-md"; // Reduced height
 
   return (
     <div className="w-full px-4 max-w-md mx-auto animate-fade-in">
@@ -210,19 +254,19 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
         </Button>
       </div>
 
-      <div className={`phone-mockup mx-auto ${phoneSize}`}>
+      <div className="phone-mockup mx-auto">
         <div
           ref={cardRef}
           className={`wrapped-card text-white ${getCardClass()}`}
         >
           <div className="mb-auto relative z-10">
-            <div className="text-center mb-6 md:mb-8">
+            <div className="text-center mb-6">
               <h1 className="text-3xl md:text-4xl font-black mb-1 md:mb-2">ChatWrapped</h1>
               <p className="text-xs md:text-sm opacity-70">La tua chat in numeri</p>
             </div>
 
             {/* Dynamic stats with icons */}
-            <div className="space-y-4 md:space-y-5">
+            <div className="space-y-4">
               {getDynamicText().map((item, index) => (
                 <div key={index} className="stat-highlight flex items-center gap-2">
                   {item.icon}
@@ -236,11 +280,12 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
             Generato con ChatWrapped
           </div>
           
-          {/* Modern floating circles pattern instead of the SVG pattern */}
+          {/* Modern floating circles pattern */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-[10%] left-[10%] w-32 h-32 rounded-full bg-white opacity-10 blur-xl"></div>
-            <div className="absolute top-[60%] right-[15%] w-40 h-40 rounded-full bg-white opacity-5 blur-xl"></div>
-            <div className="absolute bottom-[20%] left-[20%] w-24 h-24 rounded-full bg-white opacity-10 blur-xl"></div>
+            <div className="absolute top-[5%] left-[10%] w-40 h-40 rounded-full bg-white opacity-10 blur-xl"></div>
+            <div className="absolute top-[50%] right-[5%] w-56 h-56 rounded-full bg-white opacity-5 blur-xl"></div>
+            <div className="absolute bottom-[10%] left-[20%] w-32 h-32 rounded-full bg-white opacity-10 blur-xl"></div>
+            <div className="absolute top-[30%] left-[60%] w-24 h-24 rounded-full bg-white opacity-8 blur-lg"></div>
           </div>
         </div>
       </div>
