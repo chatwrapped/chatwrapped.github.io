@@ -113,12 +113,61 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
     }
   };
 
+  // Dynamic text generation based on stats
+  const getDynamicText = () => {
+    const users = getMostFrequentUsers();
+    const mostActiveUser = users.length ? users[0] : "nessuno";
+    const timeOfDay = getTimeOfDayStats();
+    const messagesPerDay = Math.round(analysis.totalMessages / 30); // Approssimazione
+    const responseTime = formatResponseTime(analysis.averageResponseTime);
+    
+    let texts = [];
+    
+    // Most active user
+    if (users.length > 1) {
+      texts.push({
+        icon: <Star className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+        text: <><span className="text-yellow-200 font-black">{mostActiveUser}</span> è il protagonista di questa chat</>
+      });
+    }
+    
+    // Messages count
+    texts.push({
+      icon: <MessageSquare className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+      text: analysis.totalMessages > 1000 
+        ? <>Incredibile! Avete scambiato <span className="text-yellow-200 font-black">{analysis.totalMessages}</span> messaggi</>
+        : <>Avete scambiato <span className="text-yellow-200 font-black">{analysis.totalMessages}</span> messaggi</>
+    });
+    
+    // Favorite word if exists
+    if (analysis.mostUsedWord.word) {
+      texts.push({
+        icon: <Heart className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+        text: <>La parola '<span className="text-yellow-200 font-black">{analysis.mostUsedWord.word}</span>' compare {analysis.mostUsedWord.count} volte</>
+      });
+    }
+    
+    // Emoji if exists
+    if (analysis.mostUsedEmoji.emoji) {
+      texts.push({
+        icon: <span className="text-2xl md:text-3xl">{analysis.mostUsedEmoji.emoji}</span>,
+        text: <>La vostra emoji preferita usata {analysis.mostUsedEmoji.count} volte</>
+      });
+    }
+    
+    // Time of day
+    texts.push({
+      icon: <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />,
+      text: <>Vi scrivete soprattutto di <span className="text-yellow-200 font-black">{timeOfDay}</span></>
+    });
+    
+    // Select only 4 dynamic texts to keep the card shorter
+    return texts.slice(0, 4);
+  };
+
   const users = getMostFrequentUsers();
   const mostActiveUser = users.length ? users[0] : "nessuno";
-  const secondMostActiveUser = users.length > 1 ? users[1] : "";
-
-  // Make sure card is always responsive and fits well on mobile
-  const phoneSize = "w-full h-auto min-h-[70vh] max-w-md";
+  const phoneSize = "w-full h-auto min-h-[550px] max-w-md"; // Reduced height
 
   return (
     <div className="w-full px-4 max-w-md mx-auto animate-fade-in">
@@ -162,83 +211,36 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
       </div>
 
       <div className={`phone-mockup mx-auto ${phoneSize}`}>
-
         <div
           ref={cardRef}
           className={`wrapped-card text-white ${getCardClass()}`}
         >
-          <div className="mb-auto">
+          <div className="mb-auto relative z-10">
             <div className="text-center mb-6 md:mb-8">
               <h1 className="text-3xl md:text-4xl font-black mb-1 md:mb-2">ChatWrapped</h1>
-              <p className="text-xs md:text-sm opacity-70">La tua chat in una card</p>
+              <p className="text-xs md:text-sm opacity-70">La tua chat in numeri</p>
             </div>
 
-            {/* Stats with icons */}
-            <div className="space-y-5 md:space-y-6">
-              <div className="stat-highlight flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />
-                <span>
-                  Hai scambiato <span className="text-yellow-200 font-black">{analysis.totalMessages}</span> messaggi
-                </span>
-              </div>
-
-              <div className="stat-highlight flex items-center gap-2">
-                <Star className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />
-                {secondMostActiveUser && (
-                  <span>
-                    <span className="text-yellow-200 font-black">{mostActiveUser}</span> è più attivo/a nella chat
-                  </span>
-                )}
-              </div>
-
-              <div className="stat-highlight flex items-center gap-2">
-                <Heart className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />
-                <span>
-                  La parola preferita è stata <span className="text-yellow-200 font-black">"{analysis.mostUsedWord.word}"</span>
-                  <div className="text-sm md:text-base font-normal opacity-70">
-                    L'hai usata {analysis.mostUsedWord.count} volte
-                  </div>
-                </span>
-              </div>
-
-              {analysis.mostUsedEmoji.emoji && (
-                <div className="stat-highlight flex items-center gap-2">
-                  <span className="text-2xl md:text-3xl">{analysis.mostUsedEmoji.emoji}</span>
-                  <span>
-                    L' emoji preferita
-                    <div className="text-sm md:text-base font-normal opacity-70">
-                      Usata {analysis.mostUsedEmoji.count} volte
-                    </div>
-                  </span>
+            {/* Dynamic stats with icons */}
+            <div className="space-y-4 md:space-y-5">
+              {getDynamicText().map((item, index) => (
+                <div key={index} className="stat-highlight flex items-center gap-2">
+                  {item.icon}
+                  <span>{item.text}</span>
                 </div>
-              )}
-
-              <div className="stat-highlight flex items-center gap-2">
-                <Calendar className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 text-yellow-200" />
-                <span>
-                  Ami chattare di <span className="text-yellow-200 font-black">{getTimeOfDayStats()}</span>
-                </span>
-              </div>
-
-              <div className="stat-highlight">
-                Tempo di risposta medio <span className="text-yellow-200 font-black">{formatResponseTime(analysis.averageResponseTime)}</span>
-              </div>
-
-              {/* Additional statistics */}
-              <div className="stat-highlight">
-                Avete scritto un totale di <span className="text-yellow-200 font-black">{getTotalWords()}</span> parole
-              </div>
-
-              {getMostActiveDay() && (
-                <div className="stat-highlight">
-                  Il giorno più attivo è stato <span className="text-yellow-200 font-black">{getMostActiveDay()}</span>
-                </div>
-              )}
+              ))}
             </div>
           </div>
 
-          <div className="text-center text-xs md:text-sm opacity-70 mt-4 md:mt-6">
+          <div className="text-center text-xs md:text-sm opacity-70 mt-4 md:mt-6 relative z-10">
             Generato con ChatWrapped
+          </div>
+          
+          {/* Modern floating circles pattern instead of the SVG pattern */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-[10%] left-[10%] w-32 h-32 rounded-full bg-white opacity-10 blur-xl"></div>
+            <div className="absolute top-[60%] right-[15%] w-40 h-40 rounded-full bg-white opacity-5 blur-xl"></div>
+            <div className="absolute bottom-[20%] left-[20%] w-24 h-24 rounded-full bg-white opacity-10 blur-xl"></div>
           </div>
         </div>
       </div>
@@ -249,7 +251,6 @@ const WrappedCard: React.FC<WrappedCardProps> = ({ analysis, onBack }) => {
           Statistiche
         </Button>
 
-        {/* Sostituiamo il pulsante di download con RewardedAd */}
         <RewardedAd
           onAdCompleted={downloadCard}
           buttonText="Scarica Card"
