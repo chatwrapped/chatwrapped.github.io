@@ -110,7 +110,7 @@ const Index = () => {
                     </li>
                     <li className="flex items-start">
                       <span className="font-semibold mr-2">5.</span>
-                      <span>Salva il file sul tuo telefono, estrai il file .txt e caricalo su ChatWrapped</span>
+                      <span>Salva il file sul tuo telefono, <b>estrai</b> il file .txt e caricalo su ChatWrapped</span>
                     </li>
                   </ol>
                 </div>
